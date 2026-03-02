@@ -1,6 +1,8 @@
 from enum import IntFlag, auto
 
 class FSAType(IntFlag):
+    """Represents the type of an FSA using bitwise flags."""
+
     DFA = auto()
     COMPLETE_DFA = auto()
     NFA = auto()

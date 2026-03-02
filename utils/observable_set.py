@@ -2,17 +2,22 @@ from collections.abc import MutableSet
 from typing import override, Iterable, Iterator, Callable
 
 class ObservableSet[T](MutableSet[T]):
-    """Abstract base class representing a set that validates items 
-    before insertion.
+    """Class that implements set observability using pre and 
+    post mutation hooks.
     """
 
+    # a hook function
     type Hook[U] = Callable[[U], None]
 
     # the underlying set data
     _data: set[T]
+    # hook function to run before an item is add to the set
     _pre_add: Hook | None
+    # hook function to run before an item is discarded from the set
     _pre_discard: Hook | None
+    # hook function to run after an item is added to the set
     _post_add: Hook | None
+    # hook function to run after an item is discarded from the set
     _post_discard: Hook | None
 
     def __init__(
@@ -32,9 +37,10 @@ class ObservableSet[T](MutableSet[T]):
         if iterable:
             for element in iterable:
                 self.add(element)
-    
+                
     @override
     def add(self, element: T) -> None:
+        """Add an element to the set, running pre and post-add hooks."""
         if self._pre_add is not None:
             self._pre_add(element)
 
@@ -45,6 +51,8 @@ class ObservableSet[T](MutableSet[T]):
 
     @override
     def discard(self, element: T) -> None:
+        """Discard an element from the set if it is in the set, running 
+        pre and post-add hooks."""
         if self._pre_discard is not None:
             self._pre_discard(element)
 
@@ -52,10 +60,6 @@ class ObservableSet[T](MutableSet[T]):
 
         if self._post_discard is not None:
             self._post_discard(element)
-
-    @classmethod
-    def _from_iterable(cls, iterable: Iterable[T]) -> ObservableSet[T]:
-        return cls(iterable)
 
     @override
     def __contains__(self, element: object) -> bool:
@@ -72,3 +76,8 @@ class ObservableSet[T](MutableSet[T]):
     @override
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self._data})"
+    
+    @override
+    def __sub__(self, other: Iterable[T]) -> set[T]:
+        return {item for item in self if item not in other}
+        

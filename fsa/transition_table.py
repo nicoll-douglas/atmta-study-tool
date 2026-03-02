@@ -3,44 +3,38 @@ from .state import State
 from typing import override, Mapping, Callable, AbstractSet
 from utils import ObservableSet
 
-class TransitionTable(dict):
+class TransitionTable(dict[tuple[State, str], ObservableSet[State]]):
     """Represents the transition table for an FSA."""
 
-    _pre_setitem: OnItemHook | None
-    _pre_value_add: OnValueMutateHook | None
-    _pre_value_discard: OnValueMutateHook | None
-    _post_value_add: OnValueMutateHook | None
-    _post_value_discard: OnValueMutateHook | None
-
+    # a key in the transition table (state and symbol)
     type Key = tuple[State, str]
+    # a value in the transition table (set of next states)
     type Value = ObservableSet[State]
-    type OnItemHook = Callable[[Key, AbstractSet[State]], None]
-    type OnValueMutateHook = Callable[[State], None]
+    # a hook function for whenever the table is mutated
+    type OnSetItemHook = Callable[[Key, AbstractSet[State]], None]
+    # a hook function for when a value in a key-value pair is mutated
+    type OnValueMutateHook = ObservableSet.Hook[State]
+
+    # hook function to run before an item is set in the table
+    _pre_setitem: OnSetItemHook | None
+    # hook function to run before a state is added to a set of next states 
+    _pre_value_add: OnValueMutateHook | None
+    # hook function to run before a state is removed from a set of next states
+    _pre_value_discard: OnValueMutateHook | None
+    # hook function to run after a state is added to a set of next states
+    _post_value_add: OnValueMutateHook | None
+    # hook function to run after a state is removed from a set of next states
+    _post_value_discard: OnValueMutateHook | None
 
     def __init__(
         self, 
-        data: Mapping[Key, AbstractSet[State]] | None = None,
-        pre_setitem: OnItemHook | None = None,
+        entries: Mapping[Key, AbstractSet[State]] | None = None,
+        pre_setitem: OnSetItemHook | None = None,
         pre_value_add: OnValueMutateHook | None = None,
         pre_value_discard: OnValueMutateHook | None = None,
         post_value_add: OnValueMutateHook | None = None,
         post_value_discard: OnValueMutateHook | None = None,
     ):
-        """Initialise the transition table with the given states, 
-        alphabet, and data.
-
-        Args:
-            states: A function that creates a StateSet object and gets passed 
-            the current instance in order for the StateSet object to perform 
-            automatic updates to the table when states change.
-
-            alphabet: A function that creates an Alphabet object and gets 
-            passed the current instance in order for the Alphabet object to 
-            perform automatic updates to the table when the alphabet changes.
-
-            data: Mapping data to add to the transition table. All and keys 
-            and values must be valid according to the states and alphabet.
-        """
         super().__init__()
     
         self._pre_setitem = pre_setitem
@@ -49,16 +43,13 @@ class TransitionTable(dict):
         self._pre_value_discard = pre_value_discard
         self._post_value_discard = post_value_discard
 
-        if data is not None:
-            for key, value in data.items():
+        if entries is not None:
+            for key, value in entries.items():
                 self[key] = value
-        
-    @override
-    def __getitem__(self, key: Key) -> Value:
-        return super().__getitem__(key)
 
     @override
     def __setitem__(self, key: Key, value: AbstractSet[State]) -> None:
+        """Set an item in the transition table, running the pre-set-item hook."""
         if self._pre_setitem is not None:
             self._pre_setitem(key, value)
 
@@ -74,8 +65,7 @@ class TransitionTable(dict):
         )
     
     def __missing__(self, key: Key) -> Value:
-        """If the key is a valid key, return an empty set indicating 
-        no end states for that transition."""
+        """Add the key to the table, mapping to an empty observable set."""
         self[key] = ObservableSet[State](
             pre_add=self._pre_value_add,
             post_add=self._post_value_add,
@@ -84,3 +74,38 @@ class TransitionTable(dict):
         )
 
         return self[key]
+
+    def remove_such_that(
+        self, 
+        match: Callable[[State, str, Value], bool]
+    ) -> None:
+        """Remove items from the transition table based on the given 
+        matching function.
+        
+        Args:
+            match: A matching function that accepts the start state, symbol 
+            and next states of the current item being processed and should 
+            return True if the item is to be discarded or False otherwise.
+        """
+        def _callback(
+            start_state: State, 
+            symbol: str, 
+            end_states: TransitionTable.Value
+        ) -> None:
+            if match(start_state, symbol, end_states):
+                del self[(start_state, symbol)]
+        
+        self.for_each(_callback)
+
+    def for_each(
+        self,
+        callback: Callable[[State, str, Value], None]
+    ) -> None:
+        """Run a callback for each item in the transition table.
+
+        Args:
+            callback: A callback that accepts the start state, symbol and 
+            next states of the current item being processed.
+        """
+        for (start_state, symbol), end_states in list(self.items()):
+            callback(start_state, symbol, end_states)
