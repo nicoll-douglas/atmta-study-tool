@@ -2,7 +2,7 @@ from graphviz import Digraph
 from collections import defaultdict
 from .word import EPSILON
 from typing import TYPE_CHECKING, AbstractSet
-from utils import sorted_comma_sep_string
+from os import PathLike
 
 if TYPE_CHECKING:
     from .fsa import FSA
@@ -18,16 +18,23 @@ class FSARenderer:
     # whether to combine multiple transitions between two states into 
     # one edge
     combine_edges: bool
+    # the output directory where rendered images should go
+    directory: PathLike | str | None
 
-    def __init__(self, combine_edges: bool = True):
+    def __init__(
+        self, 
+        combine_edges: bool = True, 
+        directory: PathLike | str | None = "diagrams"
+    ):
         self.combine_edges = combine_edges
+        self.directory = directory
 
-    def render(self, fsa: FSA, filename: str, open_file: bool = True) -> None:
+    def render(self, fsa: FSA, filename: PathLike | str, open_file: bool = False) -> None:
         """Create an image representation (.png) of the given FSA and optionally 
         open the image file.
 
         Args:
-            filename: The extension-less filename to give the .png file.
+            filename: The filename to give the .png file.
             open_file: Whether to open the .png file for immediate 
             viewing.
         """
@@ -43,7 +50,12 @@ class FSARenderer:
 
         FSARenderer._insert_initial_state_arrow(graph, fsa.initial_state)
 
-        graph.render(filename, view=open_file, cleanup=True)
+        graph.render(
+            filename, 
+            directory=self.directory, 
+            view=open_file, 
+            cleanup=True
+        )
     
     @classmethod
     def _get_diagram_transition_label(cls, symbol: str) -> str:
@@ -128,5 +140,5 @@ class FSARenderer:
             graph.edge(
                 start_state.label,
                 next_state.label,
-                label=sorted_comma_sep_string(labels)
+                label=", ".join(sorted(labels))
             )

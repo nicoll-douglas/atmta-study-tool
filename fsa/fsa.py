@@ -5,18 +5,8 @@ from .state import State
 from .word import EPSILON
 from .transition_table import TransitionTable
 from . import hooks
-from utils import ObservableSet
+from lib import ObservableSet
 from .fsa_type import FSAType
-
-"""
-Algorithms to implement:
-    - [x] Subset construction
-    - [x] Epsilon removal
-    - [ ] Complementation
-    - [ ] Intersection (product automaton)
-    - [ ] Minimisation
-    
-"""
 
 class FSA:
     """Represents a Finite State Automaton (FSA) and contains algorithms 
@@ -36,7 +26,7 @@ class FSA:
     def __init__(
         self,
         initial_state: State,
-        states: set[State],
+        states: AbstractSet[State],
         alphabet: AbstractSet[str] | None = None,
         transitions: AbstractSet[tuple[State, str, State]] | None = None,
         final_states: AbstractSet[State] | None = None
@@ -53,7 +43,7 @@ class FSA:
         return self._states
     
     @states.setter
-    def states(self, value: set[State]) -> None:
+    def states(self, value: AbstractSet[State]) -> None:
         """Set the states of the FSA.
         
         The new value is validated to make sure it contains the current 
@@ -66,7 +56,7 @@ class FSA:
             current_initial_state=self.initial_state
         )
 
-        states_to_add: set[State] = value - self.states
+        states_to_add: set[State] = set(value) - self.states
         states_to_remove: set[State] = self.states - value
 
         for state in states_to_remove:
@@ -145,27 +135,27 @@ class FSA:
     def type(self) -> FSAType:
         """Gets bitwise flags indicating the type of the FSA.
         
-        If FSAType.COMPLETE_DFA is set in the result then FSAType.DFA 
-        is also set. If FSAType.EPSILON_NFA is set then FSAType.NFA is also 
+        If FSAType.EPSILON_NFA is set then FSAType.NFA is also 
         set. FSAType.NFA and FSAType.DFA are mutually exclusive.
         """
+        type: FSAType = FSAType.DFA | FSAType.COMPLETE
+
         if any(
             symbol == EPSILON
             and next_states
             for (_, symbol), next_states in self.transition_table.items()
-        ): return FSAType.NFA | FSAType.EPSILON_NFA
-
-        type: FSAType = FSAType.DFA | FSAType.COMPLETE_DFA
+        ): 
+            type = (type & ~FSAType.DFA) | FSAType.NFA | FSAType.EPSILON_NFA
 
         for state in self.states:
             for symbol in self.alphabet:
                 next_state_count: int = len(self.delta(state, symbol))
 
                 if next_state_count > 1:
-                    return FSAType.NFA
+                    type = (type & ~FSAType.DFA) | FSAType.NFA
                 
                 if next_state_count == 0:
-                    type = FSAType.DFA
+                    type &= ~FSAType.COMPLETE
         
         return type
  
@@ -189,85 +179,17 @@ class FSA:
             for start_state in normalised_states
             for next_state in self.transition_table[(start_state, symbol)]
         })
-
-    def accepts(self, word: str) -> bool:
-        """Return True if the FSA accepts the given word otherwise 
-        False."""
-        return FSA._dfa_accepts(self.subset_construction(), word)
-
-    def recognizes_empty_language(self) -> bool:
-        """Return True if the FSA recognzies the empty language (a set 
-        with no words), otherwise False.
-        """ 
-        visited: set[State] = {self.initial_state}
-        queue: deque[State] = deque([self.initial_state])
-
-        while queue:
-            current_state: State = queue.popleft()
-            
-            if current_state in self.final_states:
-                return False
-            
-            for (start_state, _), next_states in (
-                self.transition_table.items()
-            ):
-                if start_state == current_state:
-                    for next_state in next_states:
-                        if next_state not in visited:
-                            visited.add(next_state)
-                            queue.append(next_state)
-                            
-        return True
-
-    def recognizes(self, language: set[str]) -> bool:
-        """Return True if the FSA recognizes the given language, 
-        otherwise False."""
-        if not language: return self.recognizes_empty_language()
-
-        dfa: FSA = self.subset_construction()
-
-        return all(FSA._dfa_accepts(dfa, word) for word in language)
     
-    def epsilon_removal(self) -> FSA:
-        """Create and return an FSA free of epsilon-transitions using the 
-        epsilon removal algorithm.
-
-        The formula used to calculate the new transition table is the 
-        following: δ'(q, a) = E(δ(E(q), a)) where E is the epsilon closure 
-        function.    
-        """
-        nfa: FSA = FSA(
+    def copy(self) -> FSA:
+        """Create a copy of the FSA."""
+        return FSA(
             initial_state=self.initial_state,
-            states={self.initial_state},
+            states=self.states,
+            final_states=self.final_states,
+            transitions=self.transition_table.flatten(),
             alphabet=self.alphabet
         )
-
-        e_closures: dict[State, frozenset[State]] = {
-            state: self.epsilon_closure(state)
-            for state in self.states
-        }
-
-        # step 1: iterate over the states
-        for state in self.states:
-            nfa.states.add(state)
-
-            # step 2: iterate over the alphabet
-            for symbol in self.alphabet:
-                # step 2.1: use the formula for δ': δ'(q, a) = E(δ(E(q), a))
-                next_states: frozenset[State] = self.epsilon_closure(
-                    self.delta(e_closures[state], symbol)
-                )
-
-                if next_states:
-                    nfa.states |= next_states
-                    nfa.transition_table[(state, symbol)] = next_states
-
-            # step 3: identify the final states such that: E(q) ∩ F != Ø
-            if self.final_states & e_closures[state]: 
-                nfa.final_states.add(state)
-        
-        return nfa
-        
+       
     def epsilon_closure(
         self, 
         states: AbstractSet[State] | State
@@ -302,100 +224,7 @@ class FSA:
                     queue.append(state)
 
         return frozenset(closure)
-    
-    def subset_construction(self, complete: bool = True) -> FSA:
-        """Construct an equivalent deterministic FSA from the current 
-        FSA via the subset construction algorithm.
-
-        Args:
-            complete: Whether the resulting DFA should be a complete DFA.
-
-        Returns:
-            An equivalent DFA
-        """
-        # step 1: get the DFA's initial state (NFA epsilon closure)
-        dfa_initial_state: frozenset[State] = self.epsilon_closure(
-            {self.initial_state}
-        )
-
-        seen_states: dict[frozenset[State], State] = {
-            dfa_initial_state: State(dfa_initial_state)
-        }
-
-        dfa: FSA = FSA(
-            initial_state=seen_states[dfa_initial_state],
-            states={seen_states[dfa_initial_state]},
-            alphabet=set(self.alphabet),
-        )
-
-        # step 2: discover all DFA states and construct the DFA 
-        # transition table 
-        discovered_states: deque[frozenset[State]] = deque(
-            [dfa_initial_state]
-        )
-
-        while discovered_states:
-            current_dfa_state: frozenset[State] = discovered_states.popleft()
-
-            # step 2.1: iterate over the alphabet
-            for symbol in self.alphabet:
-                # step 2.2: find the next DFA state using the formula:
-                # δ'(Q, a) = E((∪ q∈Q) δ(q, a))
-                next_dfa_state: frozenset[State] = self.epsilon_closure(
-                    self.delta(current_dfa_state, symbol)
-                )
-
-                if not complete and not next_dfa_state: continue
-
-                if next_dfa_state not in seen_states:
-                    seen_states[next_dfa_state] = State(next_dfa_state)
-                    dfa.states.add(seen_states[next_dfa_state])
-
-                    # step 2.3: add the state to the queue if undiscovered
-                    discovered_states.append(next_dfa_state)
-
-                dfa.transition_table[
-                    (seen_states[current_dfa_state], symbol)
-                ] = {seen_states[next_dfa_state]}
-
-        # step 3: identify the final states from the formula:
-        # F' = {q | q ∈ Q' && q ∩ F != Ø}
-        dfa.final_states = {
-            dfa_state
-            for nfa_states, dfa_state in seen_states.items()
-            if nfa_states & self.final_states
-        }
-
-        return dfa
-    
-    @staticmethod
-    def _dfa_accepts(dfa: FSA, word: str) -> bool:
-        """Return True if the given DFA accepts the given word, 
-        otherwise False.
-
-        Raises:
-            ValueError: If the given FSA is not a DFA.
-        """
-        if FSAType.DFA not in dfa.type:
-            raise ValueError(
-                f"Expected an FSA of type {FSAType.DFA}. "
-                f"Got an FSA of type {dfa.type}."
-            )
-
-        current_state: State = dfa.initial_state
-
-        for symbol in word:
-            next_states: frozenset[State] = dfa.delta(current_state, symbol)
-
-            # no next state so we hit a dead-end which means the word 
-            # is not accepted
-            if not next_states: return False
-
-            # since we are traversing a DFA the set only has one state
-            (current_state, ) = next_states
-
-        return current_state in dfa.final_states
-    
+        
     def _states_from_set(
         self, 
         states: AbstractSet[State],

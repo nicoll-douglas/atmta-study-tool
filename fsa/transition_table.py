@@ -1,7 +1,7 @@
 from __future__ import annotations
 from .state import State
 from typing import override, Mapping, Callable, AbstractSet
-from utils import ObservableSet
+from lib import ObservableSet
 
 class TransitionTable(dict[tuple[State, str], ObservableSet[State]]):
     """Represents the transition table for an FSA."""
@@ -109,3 +109,21 @@ class TransitionTable(dict[tuple[State, str], ObservableSet[State]]):
         """
         for (start_state, symbol), end_states in list(self.items()):
             callback(start_state, symbol, end_states)
+        
+    def flatten(self) -> set[tuple[State, str, State]]:
+        """Flatten all transitions in the table into a set of 3-tuples 
+        (start state, symbol, next state)."""
+        flattened_transitions: set[tuple[State, str, State]] = set()
+
+        def _add_flattened(
+            start_state: State, 
+            symbol: str,
+            next_states: TransitionTable.Value
+        ) -> None:
+            for next_state in next_states:
+                flattened_transitions.add((start_state, symbol, next_state))
+        
+        self.for_each(_add_flattened)
+
+        return flattened_transitions
+        
