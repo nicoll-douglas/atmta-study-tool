@@ -20,14 +20,14 @@ class _MarkingTable(SetMap[State, bool]):
 
         super().__init__(
             ((states_list[i], states_list[j]), False)
-            for i in range(self.size - 1)
-            for j in range(i + 1, self.size)
+            for i in range(len(states_list) - 1)
+            for j in range(i + 1, len(states_list))
         )
 
     @property
     def size(self) -> int:
         """Get the size of the marking table."""
-        return len(self._row) # or column length (both the same)
+        return len(self._states) - 1
 
     def mark(self, state_pair: Key) -> None:
         """Mark a state pair in the marking table."""
@@ -37,7 +37,7 @@ class _MarkingTable(SetMap[State, bool]):
         """Unmark a state pair in the marking table."""
         self[state_pair] = False
     
-    def is_marked(self, state_pair: Key):
+    def is_marked(self, state_pair: Key) -> Value:
         """Return True if the given pair is marked or False otherwise."""
         return self[state_pair]
 

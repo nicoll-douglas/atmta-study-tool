@@ -25,6 +25,7 @@ class SetMap[T, U](dict[frozenset[T], U]):
     def __getitem__(self, key: Iterable[T]) -> U:
         return super().__getitem__(self._key(key))
     
+    @override
     def __contains__(self, item: object) -> bool:
         if not isinstance(item, Iterable):
             return False
