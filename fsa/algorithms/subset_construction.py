@@ -3,8 +3,9 @@ from ..models.state import State
 from ..models.fsa import FSA
 from collections import deque
 
+
 def subset_construction(fsa: FSA, complete: bool = True) -> FSA:
-    """Construct an equivalent deterministic FSA from the current 
+    """Construct an equivalent deterministic FSA from the current
     FSA via the subset construction algorithm.
 
     Args:
@@ -17,9 +18,7 @@ def subset_construction(fsa: FSA, complete: bool = True) -> FSA:
     dfa_initial_state: set[State] = fsa.epsilon_closure(fsa.initial_state)
 
     seen_states: SetMap[State, State] = SetMap[State, State](
-        [
-            (dfa_initial_state, State(dfa_initial_state))
-        ]
+        [(dfa_initial_state, State(dfa_initial_state))]
     )
 
     dfa: FSA = FSA(
@@ -28,11 +27,9 @@ def subset_construction(fsa: FSA, complete: bool = True) -> FSA:
         alphabet=set(fsa.alphabet),
     )
 
-    # step 2: discover all DFA states and construct the DFA 
-    # transition table 
-    discovered_states: deque[set[State]] = deque(
-        [dfa_initial_state]
-    )
+    # step 2: discover all DFA states and construct the DFA
+    # transition table
+    discovered_states: deque[set[State]] = deque([dfa_initial_state])
 
     while discovered_states:
         current_dfa_state: set[State] = discovered_states.popleft()
@@ -45,7 +42,8 @@ def subset_construction(fsa: FSA, complete: bool = True) -> FSA:
                 fsa.delta(current_dfa_state, symbol)
             )
 
-            if not complete and not next_dfa_state: continue
+            if not complete and not next_dfa_state:
+                continue
 
             if next_dfa_state not in seen_states:
                 seen_states[next_dfa_state] = State(next_dfa_state)
@@ -54,9 +52,9 @@ def subset_construction(fsa: FSA, complete: bool = True) -> FSA:
                 # step 2.3: add the state to the queue if undiscovered
                 discovered_states.append(next_dfa_state)
 
-            dfa.transition_table[
-                (seen_states[current_dfa_state], symbol)
-            ] = {seen_states[next_dfa_state]}
+            dfa.transition_table[(seen_states[current_dfa_state], symbol)] = {
+                seen_states[next_dfa_state]
+            }
 
     # step 3: identify the final states from the formula:
     # F' = {q | q ∈ Q' && q ∩ F != Ø}

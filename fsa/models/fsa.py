@@ -8,8 +8,9 @@ from .. import _hooks
 from lib import ObservableSet
 from .fsa_type import FSAType
 
+
 class FSA:
-    """Represents a Finite State Automaton (FSA) and contains algorithms 
+    """Represents a Finite State Automaton (FSA) and contains algorithms
     that operate on it."""
 
     # the initial state of the FSA
@@ -29,7 +30,7 @@ class FSA:
         states: AbstractSet[State],
         alphabet: AbstractSet[str] | None = None,
         transitions: AbstractSet[tuple[State, str, State]] | None = None,
-        final_states: AbstractSet[State] | None = None
+        final_states: AbstractSet[State] | None = None,
     ):
         self._initial_state = initial_state
         self._states = self._states_from_set(set())
@@ -41,19 +42,18 @@ class FSA:
     @property
     def states(self) -> ObservableSet[State]:
         return self._states
-    
+
     @states.setter
     def states(self, value: AbstractSet[State]) -> None:
         """Set the states of the FSA.
-        
-        The new value is validated to make sure it contains the current 
-        initial state. As a side effect, any final states not in the new 
-        set of states are removed and any transitions involving states 
+
+        The new value is validated to make sure it contains the current
+        initial state. As a side effect, any final states not in the new
+        set of states are removed and any transitions involving states
         not in the new set of states are also removed.
         """
         _hooks.states.pre_set(
-            new_states=value,
-            current_initial_state=self.initial_state
+            new_states=value, current_initial_state=self.initial_state
         )
 
         states_to_add: set[State] = set(value) - self.states
@@ -64,88 +64,84 @@ class FSA:
 
         for state in states_to_add:
             self.states.add(state)
-    
+
     @property
     def initial_state(self) -> State:
         return self._initial_state
-    
+
     @initial_state.setter
     def initial_state(self, value: State) -> None:
         """Set the initial state of the FSA.
-        
-        The new state is validated to make sure it is a state in 
+
+        The new state is validated to make sure it is a state in
         the current set of states.
         """
         _hooks.initial_state.pre_set(
-            new_initial_state=value,
-            current_states=self.states
+            new_initial_state=value, current_states=self.states
         )
-        
+
         self._initial_state = value
-    
+
     @property
     def final_states(self) -> ObservableSet[State]:
         return self._final_states
-    
+
     @final_states.setter
     def final_states(self, value: AbstractSet[State] | None) -> None:
         """Set the final states of the FSA.
-        
-        The new value is validated to make sure it only contains states 
+
+        The new value is validated to make sure it only contains states
         in the current set of states.
         """
         self._final_states = self._final_states_from_set(value)
-    
+
     @property
     def alphabet(self) -> ObservableSet[str]:
         return self._alphabet
-    
+
     @alphabet.setter
     def alphabet(self, value: AbstractSet[str]) -> None:
         """Set the alphabet of the FSA.
-        
-        As a side effect, any transition involving a symbol not in the 
+
+        As a side effect, any transition involving a symbol not in the
         new alphabet is removed from the transition table.
         """
         self._alphabet = self._alphabet_from_set(value)
 
         _hooks.alphabet.post_set(
-            new_alphabet=value,
-            current_transition_table=self.transition_table
+            new_alphabet=value, current_transition_table=self.transition_table
         )
- 
+
     @property
     def transition_table(self) -> _TransitionTable:
         return self._transition_table
-    
+
     @transition_table.setter
     def transition_table(
-        self, 
-        value: AbstractSet[tuple[State, str, State]] | None
+        self, value: AbstractSet[tuple[State, str, State]] | None
     ) -> None:
         """Set the transition table of the FSA.
-        
-        The new value is validated to make sure it's transitions only 
-        contain states in the current set of states and symbols in the 
+
+        The new value is validated to make sure it's transitions only
+        contain states in the current set of states and symbols in the
         current alphabet.
         """
         self._transition_table = self._transition_table_from_set(value)
-    
+
     @property
     def type(self) -> FSAType:
         """Gets bitwise flags indicating the type of the FSA.
-        
-        If FSAType.EPSILON_NFA is set then FSAType.NFA is also 
+
+        If FSAType.EPSILON_NFA is set then FSAType.NFA is also
         set. FSAType.NFA and FSAType.DFA are mutually exclusive.
         """
         # ideal scenario, complete and DFA
         type: FSAType = FSAType.DFA | FSAType.COMPLETE
 
         if any(
-            symbol == EPSILON
-            and next_states
+            symbol == EPSILON and next_states
             for (_, symbol), next_states in self.transition_table.items()
-        ): 
+        ):
             type = (type & ~FSAType.DFA) | FSAType.NFA | FSAType.EPSILON_NFA
 
         for state in self.states:
@@ -154,21 +150,17 @@ class FSA:
 
                 if next_state_count > 1:
                     type = (type & ~FSAType.DFA) | FSAType.NFA
-                
+
                 if next_state_count == 0:
                     type &= ~FSAType.COMPLETE
-        
+
         return type
- 
-    def delta(
-        self, 
-        state: State | AbstractSet[State], 
-        symbol: str
-    ) -> set[State]:    
-        """Get the set of next states for a state and symbol in the 
+
+    def delta(self, state: State | AbstractSet[State], symbol: str) -> set[State]:
+        """Get the set of next states for a state and symbol in the
         transition table.
 
-        If a set of states is passed then the union of next states is 
+        If a set of states is passed then the union of next states is
         returned for those states.
         """
         normalised_states: AbstractSet[State] = (
@@ -180,7 +172,7 @@ class FSA:
             for start_state in normalised_states
             for next_state in self.transition_table[(start_state, symbol)]
         }
-    
+
     def copy(self) -> FSA:
         """Create a copy of the FSA."""
         return FSA(
@@ -188,29 +180,24 @@ class FSA:
             states=self.states,
             final_states=self.final_states,
             transitions=self.transition_table.flatten(),
-            alphabet=self.alphabet
+            alphabet=self.alphabet,
         )
-       
-    def epsilon_closure(
-        self, 
-        states: AbstractSet[State] | State
-    ) -> set[State]:
+
+    def epsilon_closure(self, states: AbstractSet[State] | State) -> set[State]:
         """Get the epsilon-closure of a state(s) in the FSA.
 
         Args:
-            states: The state or set of starting states from which to start 
+            states: The state or set of starting states from which to start
             considering epsilon transitions.
 
         Returns:
-            The epsilon-closure which contains all states 
-            that can be reached by only following epsilon-transitions 
-            from the given states. At minimum this will be a set states 
+            The epsilon-closure which contains all states
+            that can be reached by only following epsilon-transitions
+            from the given states. At minimum this will be a set states
             including all the given states.
         """
         normalised_states: set[State] = (
-            {states}
-            if isinstance(states, State)
-            else set(states)
+            {states} if isinstance(states, State) else set(states)
         )
         closure: set[State] = normalised_states
         queue: deque[State] = deque(normalised_states)
@@ -225,67 +212,61 @@ class FSA:
                     queue.append(state)
 
         return closure
-        
+
     def _states_from_set(
-        self, 
+        self,
         states: AbstractSet[State],
     ) -> ObservableSet[State]:
-        """Create and return a set of states for the class from the given 
+        """Create and return a set of states for the class from the given
         set of states."""
         return ObservableSet[State](
             states,
             pre_add=lambda state: _hooks.states.pre_add(
-                new_state=state,
-                current_states=self.states
+                new_state=state, current_states=self.states
             ),
             post_discard=lambda state: _hooks.states.post_discard(
                 state=state,
                 current_final_states=self.final_states,
-                current_transition_table=self.transition_table
+                current_transition_table=self.transition_table,
             ),
             pre_discard=lambda state: _hooks.states.pre_discard(
                 state=state,
                 current_initial_state=self.initial_state,
-            )
+            ),
         )
 
     def _final_states_from_set(
-        self, 
-        final_states: AbstractSet[State] | None = None
+        self, final_states: AbstractSet[State] | None = None
     ) -> ObservableSet[State]:
-        """Create a set of final states for the class from the given set 
+        """Create a set of final states for the class from the given set
         of final states."""
         return ObservableSet[State](
             final_states,
             pre_add=lambda state: _hooks.final_states.pre_add(
-                new_final_state=state,
-                current_states=self.states
-            )
+                new_final_state=state, current_states=self.states
+            ),
         )
-    
+
     def _alphabet_from_set(
-        self,
-        alphabet: AbstractSet[str] | None = None
+        self, alphabet: AbstractSet[str] | None = None
     ) -> ObservableSet[str]:
         """Create an alphabet for the class from the given set of symbols."""
         return ObservableSet[str](
             alphabet,
             pre_add=lambda symbol: _hooks.alphabet.pre_add(symbol),
             post_discard=lambda symbol: _hooks.alphabet.post_discard(
-                symbol=symbol, 
-                current_transition_table=self.transition_table
+                symbol=symbol, current_transition_table=self.transition_table
             ),
         )
-    
+
     def _transition_table_from_set(
-        self,
-        transitions: AbstractSet[tuple[State, str, State]] | None = None
+        self, transitions: AbstractSet[tuple[State, str, State]] | None = None
     ) -> _TransitionTable:
-        """Create a transition table for the class from the given set of 
+        """Create a transition table for the class from the given set of
         transitions.
-        
+
         Args:
-            transitions: A set of 3-tuples representing a transition with 
+            transitions: A set of 3-tuples representing a transition with
             a start state, symbol and next state.
         """
         transition_data: defaultdict[tuple[State, str], set[State]] | None
@@ -295,7 +276,7 @@ class FSA:
 
             for start_state, symbol, next_state in transitions:
                 transition_data[(start_state, symbol)].add(next_state)
-        else: 
+        else:
             transition_data = None
 
         return _TransitionTable(
@@ -305,11 +286,10 @@ class FSA:
                     key=key,
                     value=value,
                     current_states=self.states,
-                    current_alphabet=self.alphabet
+                    current_alphabet=self.alphabet,
                 )
             ),
             pre_value_add=lambda state: _hooks.transition_table.pre_value_add(
-                new_state=state,
-                current_states=self.states
+                new_state=state, current_states=self.states
             ),
         )

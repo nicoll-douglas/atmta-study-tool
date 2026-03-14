@@ -15,5 +15,5 @@ __all__ = [
     "epsilon_remove",
     "minimize",
     "product",
-    "recognizes"
+    "recognizes",
 ]

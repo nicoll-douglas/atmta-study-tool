@@ -18,6 +18,6 @@ epsilon_nfa: FSA = FSA(
         (q[1], EPSILON, q[1]),
         (q[1], EPSILON, q[2]),
         (q[2], "b", q[1]),
-        (q[2], "c", q[2])
-    }
+        (q[2], "c", q[2]),
+    },
 )

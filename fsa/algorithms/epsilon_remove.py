@@ -4,23 +4,21 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..models.state import State
 
+
 def epsilon_remove(fsa: FSA) -> FSA:
-    """Create and return an FSA free of epsilon-transitions using the 
+    """Create and return an FSA free of epsilon-transitions using the
     epsilon removal algorithm.
 
-    The formula used to calculate the new transition table is the 
-    following: δ'(q, a) = E(δ(E(q), a)) where E is the epsilon closure 
-    function.    
+    The formula used to calculate the new transition table is the
+    following: δ'(q, a) = E(δ(E(q), a)) where E is the epsilon closure
+    function.
     """
     nfa: FSA = FSA(
-        initial_state=fsa.initial_state,
-        states=fsa.states,
-        alphabet=fsa.alphabet
+        initial_state=fsa.initial_state, states=fsa.states, alphabet=fsa.alphabet
     )
 
     e_closures: dict[State, set[State]] = {
-        state: fsa.epsilon_closure(state)
-        for state in fsa.states
+        state: fsa.epsilon_closure(state) for state in fsa.states
     }
 
     # step 1: iterate over the states
@@ -36,7 +34,7 @@ def epsilon_remove(fsa: FSA) -> FSA:
                 nfa.transition_table[(state, symbol)] = next_states
 
         # step 3: identify the final states such that: E(q) ∩ F != Ø
-        if fsa.final_states & e_closures[state]: 
+        if fsa.final_states & e_closures[state]:
             nfa.final_states.add(state)
-    
+
     return nfa
