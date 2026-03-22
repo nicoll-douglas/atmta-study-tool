@@ -27,7 +27,7 @@ class UID[T]:
         return instance
 
     def __init__(self, uid: T):
-        if hasattr(self, "uid"):
+        if hasattr(self, "_uid"):
             return
 
         self._uid = uid
