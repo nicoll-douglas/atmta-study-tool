@@ -1,17 +1,17 @@
-from __future__ import annotations
-from collections import deque, defaultdict
-from typing import AbstractSet
-from .state import State
-from ..constants import EPSILON
-from .transition_table import _TransitionTable
-from .. import _hooks
-from lib import ObservableSet
 from .fsa_type import FSAType
+from .transition_table import TransitionTable
+from collections import deque
+from typing import AbstractSet, TYPE_CHECKING
+from _common.data_structures import ObservableSet, ObservableSetController
+from language.models import Alphabet, Word
+
+if TYPE_CHECKING:
+    from language.models import Symbol
+    from .state import State
 
 
 class FSA:
-    """Represents a Finite State Automaton (FSA) and contains algorithms
-    that operate on it."""
+    """Represents a Finite State Automaton (FSA)."""
 
     # the initial state of the FSA
     _initial_state: State
@@ -20,191 +20,187 @@ class FSA:
     # the final states of the FSA
     _final_states: ObservableSet[State]
     # the transition table of the FSA
-    _transition_table: _TransitionTable
+    _transition_table: TransitionTable
     # the alphabet of the FSA
-    _alphabet: ObservableSet[str]
+    _alphabet: Alphabet
 
     def __init__(
         self,
         initial_state: State,
         states: AbstractSet[State],
-        alphabet: AbstractSet[str] | None = None,
-        transitions: AbstractSet[tuple[State, str, State]] | None = None,
+        alphabet: Alphabet | None = None,
+        transition_table: TransitionTable | None = None,
         final_states: AbstractSet[State] | None = None,
     ):
-        self._initial_state = initial_state
-        self._states = self._states_from_set(set())
+        self.initial_state = initial_state
         self.states = states
-        self._alphabet = self._alphabet_from_set(alphabet)
-        self.final_states = final_states
-        self.transition_table = transitions
+        self.alphabet = alphabet if alphabet is not None else Alphabet()
+        self.final_states = final_states if final_states is not None else set()
+        self.transition_table = (
+            transition_table if transition_table is not None else TransitionTable()
+        )
 
     @property
     def states(self) -> ObservableSet[State]:
         return self._states
 
     @states.setter
-    def states(self, value: AbstractSet[State]) -> None:
-        """Set the states of the FSA.
+    def states(self, new_value: AbstractSet[State]) -> None:
+        if self.initial_state not in new_value:
+            raise ValueError(
+                f"Expected a set of states containing the initial state {self.initial_state!r}. Got {new_value}."
+            )
 
-        The new value is validated to make sure it contains the current
-        initial state. As a side effect, any final states not in the new
-        set of states are removed and any transitions involving states
-        not in the new set of states are also removed.
-        """
-        _hooks.states.pre_set(
-            new_states=value, current_initial_state=self.initial_state
-        )
+        def pre_discard(state: State) -> None:
+            if state == self.initial_state:
+                raise ValueError(
+                    f"Expected a non-initial state. Got initial state {state!r}."
+                )
 
-        states_to_add: set[State] = set(value) - self.states
-        states_to_remove: set[State] = self.states - value
+        def post_discard(state: State) -> None:
+            self.final_states.discard(state)
 
-        for state in states_to_remove:
-            self.states.discard(state)
+            self.transition_table.remove_such_that(lambda key, _: key[0] == state)
 
-        for state in states_to_add:
-            self.states.add(state)
+            for next_states in self.transition_table.values():
+                next_states.discard(state)
+
+        self._states = ObservableSet[State](new_value, post_discard, pre_discard)
+
+        if hasattr(self, "_final_states"):
+            self.final_states -= self.final_states - new_value
+
+        if hasattr(self, "_transition_table"):
+            self.transition_table.remove_such_that(
+                lambda key, _: key[0] not in new_value
+            )
+
+            for next_states in self.transition_table.values():
+                next_states -= next_states - new_value
 
     @property
     def initial_state(self) -> State:
         return self._initial_state
 
     @initial_state.setter
-    def initial_state(self, value: State) -> None:
-        """Set the initial state of the FSA.
+    def initial_state(self, new_value: State) -> None:
+        if hasattr(self, "_states"):
+            self._validate_states_contain(new_value)
 
-        The new state is validated to make sure it is a state in
-        the current set of states.
-        """
-        _hooks.initial_state.pre_set(
-            new_initial_state=value, current_states=self.states
-        )
-
-        self._initial_state = value
+        self._initial_state = new_value
 
     @property
     def final_states(self) -> ObservableSet[State]:
         return self._final_states
 
     @final_states.setter
-    def final_states(self, value: AbstractSet[State] | None) -> None:
-        """Set the final states of the FSA.
-
-        The new value is validated to make sure it only contains states
-        in the current set of states.
-        """
-        self._final_states = self._final_states_from_set(value)
-
-    @property
-    def alphabet(self) -> ObservableSet[str]:
-        return self._alphabet
-
-    @alphabet.setter
-    def alphabet(self, value: AbstractSet[str]) -> None:
-        """Set the alphabet of the FSA.
-
-        As a side effect, any transition involving a symbol not in the
-        new alphabet is removed from the transition table.
-        """
-        self._alphabet = self._alphabet_from_set(value)
-
-        _hooks.alphabet.post_set(
-            new_alphabet=value, current_transition_table=self.transition_table
+    def final_states(self, new_value: AbstractSet[State]) -> None:
+        self._final_states = ObservableSet[State](
+            new_value, pre_add=self._validate_states_contain
         )
 
     @property
-    def transition_table(self) -> _TransitionTable:
+    def alphabet(self) -> Alphabet:
+        return self._alphabet
+
+    @alphabet.setter
+    def alphabet(self, new_value: Alphabet) -> None:
+        def post_discard(symbol: Symbol) -> None:
+            self.transition_table.remove_such_that(lambda key, _: symbol == key[1])
+
+        ObservableSetController.set__post_discard[Symbol](new_value, post_discard)
+
+        self._alphabet = new_value
+
+        if hasattr(self, "_transition_table"):
+            self.transition_table.remove_such_that(
+                lambda key, _: key[1] not in new_value
+            )
+
+    @property
+    def transition_table(self) -> TransitionTable:
         return self._transition_table
 
     @transition_table.setter
-    def transition_table(
-        self, value: AbstractSet[tuple[State, str, State]] | None
-    ) -> None:
-        """Set the transition table of the FSA.
+    def transition_table(self, new_value: TransitionTable) -> None:
 
-        The new value is validated to make sure it's transitions only
-        contain states in the current set of states and symbols in the
-        current alphabet.
-        """
-        self._transition_table = self._transition_table_from_set(value)
+        def pre_setitem(key: TransitionTable.Key, value: TransitionTable.Value) -> None:
+            start_state: State
+            symbol: Symbol | Word
+            start_state, symbol = key
+
+            self._validate_states_contain(start_state)
+
+            if symbol not in self.alphabet and symbol != Word.EPSILON:
+                raise ValueError(
+                    f"Expected a symbol in the alphabet {self.alphabet} or {Word.EPSILON}. Got {symbol!r}."
+                )
+
+            if not value <= self.states:
+                raise ValueError(
+                    f"Expected the set of next states to be a subset of the set of states {self.states}. Got {value!r}."
+                )
+
+        new_value._pre_setitem = pre_setitem
+
+        # set all key-value pairs again to run our pre-setitem validation
+        for key, value in new_value.items():
+            new_value[key] = value
+
+        new_value._pre_value_add = self._validate_states_contain
+
+        self._transition_table = new_value
 
     @property
     def type(self) -> FSAType:
-        """Gets bitwise flags indicating the type of the FSA.
-
-        If FSAType.EPSILON_NFA is set then FSAType.NFA is also
-        set. FSAType.NFA and FSAType.DFA are mutually exclusive.
-        """
+        """Gets bitwise flags indicating the type of the FSA."""
         # ideal scenario, complete and DFA
         type: FSAType = FSAType.DFA | FSAType.COMPLETE
 
+        # check epsilon transitions
         if any(
-            symbol == EPSILON and next_states
+            symbol == Word.EPSILON and next_states
             for (_, symbol), next_states in self.transition_table.items()
         ):
+            # set NFA and EPSILON_NFA, remove DFA
             type = (type & ~FSAType.DFA) | FSAType.NFA | FSAType.EPSILON_NFA
 
         for state in self.states:
             for symbol in self.alphabet:
                 next_state_count: int = len(self.delta(state, symbol))
 
+                # more than 1 outgoing transition for the same letter
                 if next_state_count > 1:
+                    # remove DFA, add NFA
                     type = (type & ~FSAType.DFA) | FSAType.NFA
 
+                # no transitions
                 if next_state_count == 0:
+                    # remove complete
                     type &= ~FSAType.COMPLETE
 
         return type
 
-    def delta(self, state: State | AbstractSet[State], symbol: str) -> set[State]:
-        """Get the set of next states for a state and symbol in the
-        transition table.
+    def delta(self, state: State, symbol: Symbol | Word) -> ObservableSet[State]:
+        """Get the set of next states for a state and symbol in the transition table."""
+        return self.transition_table[(state, symbol)]
 
-        If a set of states is passed then the union of next states is
-        returned for those states.
-        """
-        normalised_states: AbstractSet[State] = (
-            {state} if isinstance(state, State) else state
-        )
-
-        return {
-            next_state
-            for start_state in normalised_states
-            for next_state in self.transition_table[(start_state, symbol)]
-        }
-
-    def copy(self) -> FSA:
-        """Create a copy of the FSA."""
-        return FSA(
-            initial_state=self.initial_state,
-            states=self.states,
-            final_states=self.final_states,
-            transitions=self.transition_table.flatten(),
-            alphabet=self.alphabet,
-        )
-
-    def epsilon_closure(self, states: AbstractSet[State] | State) -> set[State]:
-        """Get the epsilon-closure of a state(s) in the FSA.
+    def epsilon_closure(self, states: AbstractSet[State]) -> set[State]:
+        """Get the epsilon-closure of a set of states in the FSA.
 
         Args:
-            states: The state or set of starting states from which to start
-            considering epsilon transitions.
+            states: The set of starting states from which to start considering epsilon transitions.
 
         Returns:
-            The epsilon-closure which contains all states
-            that can be reached by only following epsilon-transitions
-            from the given states. At minimum this will be a set states
-            including all the given states.
+            The epsilon-closure which contains all states that can be reached by only following epsilon-transitions from the given states. At minimum this will be a set states including all the given states.
         """
-        normalised_states: set[State] = (
-            {states} if isinstance(states, State) else set(states)
-        )
-        closure: set[State] = normalised_states
-        queue: deque[State] = deque(normalised_states)
+
+        closure: set[State] = set(states)
+        queue: deque[State] = deque(closure)
 
         while queue:
             current_state: State = queue.popleft()
-            next_states: set[State] = self.delta(current_state, EPSILON)
+            next_states: ObservableSet[State] = self.delta(current_state, Word.EPSILON)
 
             for state in next_states:
                 if state not in closure:
@@ -213,83 +209,9 @@ class FSA:
 
         return closure
 
-    def _states_from_set(
-        self,
-        states: AbstractSet[State],
-    ) -> ObservableSet[State]:
-        """Create and return a set of states for the class from the given
-        set of states."""
-        return ObservableSet[State](
-            states,
-            pre_add=lambda state: _hooks.states.pre_add(
-                new_state=state, current_states=self.states
-            ),
-            post_discard=lambda state: _hooks.states.post_discard(
-                state=state,
-                current_final_states=self.final_states,
-                current_transition_table=self.transition_table,
-            ),
-            pre_discard=lambda state: _hooks.states.pre_discard(
-                state=state,
-                current_initial_state=self.initial_state,
-            ),
-        )
-
-    def _final_states_from_set(
-        self, final_states: AbstractSet[State] | None = None
-    ) -> ObservableSet[State]:
-        """Create a set of final states for the class from the given set
-        of final states."""
-        return ObservableSet[State](
-            final_states,
-            pre_add=lambda state: _hooks.final_states.pre_add(
-                new_final_state=state, current_states=self.states
-            ),
-        )
-
-    def _alphabet_from_set(
-        self, alphabet: AbstractSet[str] | None = None
-    ) -> ObservableSet[str]:
-        """Create an alphabet for the class from the given set of symbols."""
-        return ObservableSet[str](
-            alphabet,
-            pre_add=lambda symbol: _hooks.alphabet.pre_add(symbol),
-            post_discard=lambda symbol: _hooks.alphabet.post_discard(
-                symbol=symbol, current_transition_table=self.transition_table
-            ),
-        )
-
-    def _transition_table_from_set(
-        self, transitions: AbstractSet[tuple[State, str, State]] | None = None
-    ) -> _TransitionTable:
-        """Create a transition table for the class from the given set of
-        transitions.
-
-        Args:
-            transitions: A set of 3-tuples representing a transition with
-            a start state, symbol and next state.
-        """
-        transition_data: defaultdict[tuple[State, str], set[State]] | None
-
-        if transitions is not None:
-            transition_data = defaultdict(set)
-
-            for start_state, symbol, next_state in transitions:
-                transition_data[(start_state, symbol)].add(next_state)
-        else:
-            transition_data = None
-
-        return _TransitionTable(
-            transition_data,
-            pre_setitem=(
-                lambda key, value: _hooks.transition_table.pre_setitem(
-                    key=key,
-                    value=value,
-                    current_states=self.states,
-                    current_alphabet=self.alphabet,
-                )
-            ),
-            pre_value_add=lambda state: _hooks.transition_table.pre_value_add(
-                new_state=state, current_states=self.states
-            ),
-        )
+    def _validate_states_contain(self, state: State) -> None:
+        """Validate that the given state is in the set of states of the FSA."""
+        if state not in self.states:
+            raise ValueError(
+                f"Expected a state in the set of states {self.states}. Got {state!r}."
+            )
