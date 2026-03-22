@@ -6,8 +6,8 @@ from collections.abc import Iterable
 class SetDict[T, U](UserDict[frozenset[T], U]):
     """Represents a dictionary that maps sets as keys to values."""
 
-    def __init__(self, mapping: Mapping[TIterable[T], U] | None = None, /, **kwargs):
-        super().__init__({self._key(k): v for k, v in mapping}, **kwargs)
+    def __init__(self, mapping: Mapping[TIterable[T], U] | None = None):
+        super().__init__({self._key(k): v for k, v in mapping.items()})
 
     def _key(self, iterable: TIterable[T]) -> frozenset[T]:
         """Get the underlying key in the dictionary for an iterable."""

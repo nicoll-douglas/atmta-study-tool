@@ -66,7 +66,7 @@ class ObservableSet[T](MutableSet[T]):
 
     @override
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._data})"
+        return f"{self.__class__.__name__}({self._data!r})"
 
 
 class ObservableSetController:

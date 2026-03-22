@@ -10,7 +10,7 @@ class Word(UserList[Symbol]):
     EPSILON: Word
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.data})"
+        return f"{self.__class__.__name__}({self.data!r})"
 
 
 Word.EPSILON = Word()

@@ -34,7 +34,7 @@ class ObservableMapping[K, V](MutableMapping[K, V]):
         self._post_delitem = post_delitem
 
         if mapping is not None:
-            self.update(dict)
+            self.update(mapping)
 
         if kwargs:
             self.update(kwargs)
@@ -76,7 +76,7 @@ class ObservableMapping[K, V](MutableMapping[K, V]):
 
     @override
     def __repr__(self):
-        return f"{self.__class__.__name__}({self._data})"
+        return f"{self.__class__.__name__}({self._data!r})"
 
     @override
     def __contains__(self, key: object) -> bool:
