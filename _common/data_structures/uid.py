@@ -33,17 +33,17 @@ class UID[T]:
         self._uid = uid
 
     @property
-    def uid(self) -> T:
+    def UID(self) -> T:
         return self._uid
 
     def __eq__(self, other: object) -> bool:
         return self is other
 
     def __hash__(self) -> int:
-        return hash((self.__class__, self.uid))
+        return hash((self.__class__, self.UID))
 
     def __str__(self) -> str:
-        return str(self.uid)
+        return str(self.UID)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.uid!r})"
+        return f"{self.__class__.__name__}({self.UID!r})"
