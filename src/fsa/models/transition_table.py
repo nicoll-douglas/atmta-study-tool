@@ -1,14 +1,11 @@
 from __future__ import annotations
 from .state import State
-from typing import override, TYPE_CHECKING
+from typing import override
 from _common.data_structures import ObservableMapping, ObservableSet
 from .state import State
 from collections.abc import Callable, Set, Mapping
-
-if TYPE_CHECKING:
-    from language.models.symbol import Symbol
-    from language.models.word import Word
-
+from language.models.symbol import Symbol
+from language.models.word import Word
 
 class TransitionTable(
     ObservableMapping[tuple[State, Symbol | Word], ObservableSet[State]]

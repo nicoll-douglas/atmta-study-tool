@@ -69,10 +69,10 @@ class ObservableMapping[K, V](MutableMapping[K, V]):
             self._post_delitem(key)
 
     def __iter__(self):
-        return iter(self.data)
+        return iter(self._data)
 
     def __len__(self):
-        return len(self.data)
+        return len(self._data)
 
     @override
     def __repr__(self):

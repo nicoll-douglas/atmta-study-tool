@@ -1,15 +1,11 @@
 from .fsa_type import FSAType
 from .transition_table import TransitionTable
 from collections import deque
-from typing import TYPE_CHECKING
 from _common.data_structures import ObservableSet, ObservableSetController
 from language.models import Alphabet, Word
 from collections.abc import Set
-
-if TYPE_CHECKING:
-    from language.models import Symbol
-    from .state import State
-
+from language.models import Symbol
+from .state import State
 
 class FSA:
     """Represents a Finite State Automaton (FSA)."""
@@ -66,7 +62,7 @@ class FSA:
             for next_states in self.transition_table.values():
                 next_states.discard(state)
 
-        self._states = ObservableSet[State](new_value, post_discard, pre_discard)
+        self._states = ObservableSet[State](new_value, post_discard=post_discard, pre_discard=pre_discard)
 
         if hasattr(self, "_final_states"):
             self.final_states -= self.final_states - new_value
