@@ -1,9 +1,10 @@
 from .fsa_type import FSAType
 from .transition_table import TransitionTable
 from collections import deque
-from typing import AbstractSet, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from _common.data_structures import ObservableSet, ObservableSetController
 from language.models import Alphabet, Word
+from collections.abc import Set
 
 if TYPE_CHECKING:
     from language.models import Symbol
@@ -27,10 +28,10 @@ class FSA:
     def __init__(
         self,
         initial_state: State,
-        states: AbstractSet[State],
+        states: Set[State],
         alphabet: Alphabet | None = None,
         transition_table: TransitionTable | None = None,
-        final_states: AbstractSet[State] | None = None,
+        final_states: Set[State] | None = None,
     ):
         self.initial_state = initial_state
         self.states = states
@@ -45,7 +46,7 @@ class FSA:
         return self._states
 
     @states.setter
-    def states(self, new_value: AbstractSet[State]) -> None:
+    def states(self, new_value: Set[State]) -> None:
         if self.initial_state not in new_value:
             raise ValueError(
                 f"Expected a set of states containing the initial state {self.initial_state!r}. Got {new_value}."
@@ -94,7 +95,7 @@ class FSA:
         return self._final_states
 
     @final_states.setter
-    def final_states(self, new_value: AbstractSet[State]) -> None:
+    def final_states(self, new_value: Set[State]) -> None:
         self._final_states = ObservableSet[State](
             new_value, pre_add=self._validate_states_contain
         )
@@ -108,7 +109,7 @@ class FSA:
         def post_discard(symbol: Symbol) -> None:
             self.transition_table.remove_such_that(lambda key, _: symbol == key[1])
 
-        ObservableSetController.set__post_discard[Symbol](new_value, post_discard)
+        ObservableSetController.set__post_discard(new_value, post_discard)
 
         self._alphabet = new_value
 
@@ -188,7 +189,7 @@ class FSA:
 
             for (start_state, _), next_states in self.transition_table.items():
                 if start_state == current_state:
-                    unvisited: ObservableSet[State] = next_states - visited
+                    unvisited: Set[State] = next_states - visited
                     visited |= unvisited
                     queue.extend(unvisited)
 
@@ -223,9 +224,7 @@ class FSA:
 
         return unproductive_states
 
-    def delta(
-        self, states: State | AbstractSet[State], symbol: Symbol | Word
-    ) -> set[State]:
+    def delta(self, states: State | Set[State], symbol: Symbol | Word) -> set[State]:
         """Get the set of next states for a given state (or given states) and symbol in the transition table."""
         if isinstance(states, State):
             return set(self.transition_table[(states, symbol)])
@@ -237,7 +236,7 @@ class FSA:
 
         return delta_states
 
-    def epsilon_closure(self, states: AbstractSet[State]) -> set[State]:
+    def epsilon_closure(self, states: Set[State]) -> set[State]:
         """Get the epsilon-closure of a set of states in the FSA.
 
         Args:
@@ -251,7 +250,7 @@ class FSA:
 
         while queue:
             current_state: State = queue.popleft()
-            next_states: ObservableSet[State] = self.delta(current_state, Word.EPSILON)
+            next_states: set[State] = self.delta(current_state, Word.EPSILON)
 
             for state in next_states:
                 if state not in closure:

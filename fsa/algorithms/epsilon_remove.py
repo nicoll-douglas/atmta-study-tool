@@ -1,6 +1,7 @@
 from ..models.fsa import FSA
-from typing import TYPE_CHECKING, AbstractSet
+from typing import TYPE_CHECKING
 from copy import deepcopy
+from collections.abc import Set
 
 if TYPE_CHECKING:
     from ..models.state import State
@@ -26,14 +27,14 @@ def _get_new_nfa_delta(
     if state in e_closure_memo:
         e_closure: set[State] = e_closure_memo[state]
     else:
-        e_closure: set[State] = e_nfa.epsilon_closure(state)
+        e_closure = e_nfa.epsilon_closure({state})
         e_closure_memo[state] = e_closure
 
     return e_nfa.epsilon_closure(e_nfa.delta(e_closure, symbol))
 
 
 def _is_new_nfa_final_state(
-    epsilon_closure: set[State], e_nfa_final_states: AbstractSet[State]
+    epsilon_closure: set[State], e_nfa_final_states: Set[State]
 ) -> bool:
     """Return True if a state is a final state in the new epsilon-free NFA, otherwise False.
 
@@ -69,7 +70,7 @@ def epsilon_remove(e_nfa: FSA) -> FSA:
             if next_states:
                 nfa.transition_table[(state, symbol)] = next_states
 
-        if _is_new_nfa_final_state(e_closure_map[state]):
+        if _is_new_nfa_final_state(e_closure_map[state], e_nfa.final_states):
             nfa.final_states.add(state)
 
     return nfa

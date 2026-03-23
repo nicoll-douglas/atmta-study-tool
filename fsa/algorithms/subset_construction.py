@@ -3,7 +3,8 @@ from ..models.fsa import FSA
 from ..models.state import State
 from collections import deque
 from copy import deepcopy
-from typing import AbstractSet, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from collections.abc import Set
 
 if TYPE_CHECKING:
     from language.models import Symbol
@@ -17,7 +18,7 @@ class _NewDFAState:
     # the actual state object that will be given to the new DFA
     _state_obj: State
 
-    def __init__(self, states: AbstractSet[State]):
+    def __init__(self, states: Set[State]):
         self._states = frozenset(states)
         # sorting here means each state object produced from the same set of states will be equivalent as they will have the same UID
         state_obj_uid: str = "{" + ", ".join(sorted(str(s) for s in states)) + "}"
@@ -56,7 +57,7 @@ class _NewDFAState:
 
         Uses the formula: q_0' = E({q_0})
         """
-        return _NewDFAState(old_fsa.epsilon_closure(old_fsa.initial_state))
+        return _NewDFAState(old_fsa.epsilon_closure({old_fsa.initial_state}))
 
 
 def subset_construction(fsa: FSA, complete: bool = True) -> FSA:

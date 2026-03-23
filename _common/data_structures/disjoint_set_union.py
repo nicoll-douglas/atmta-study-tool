@@ -1,4 +1,4 @@
-from typing import Iterator, AbstractSet
+from collections.abc import Iterator, Set
 
 
 class DisjointSetUnion[T]:
@@ -7,9 +7,9 @@ class DisjointSetUnion[T]:
     # mapping of states to their immediate parents
     _parents: dict[T, T]
     # all items under consideration of the data structure
-    _items: AbstractSet[T]
+    _items: Set[T]
 
-    def __init__(self, items: AbstractSet[T]):
+    def __init__(self, items: Set[T]):
         """Initialise the disjoint sets with each item in its own disjoint set."""
         self._items = items
         self._parents = {t: t for t in items}

@@ -1,12 +1,13 @@
 from ..models.state import State
-from typing import TYPE_CHECKING, AbstractSet
+from typing import TYPE_CHECKING
 from copy import deepcopy
+from collections.abc import Set
 
 if TYPE_CHECKING:
     from ..models.fsa import FSA
 
 
-def _create_new_dead_state(fsa_states: AbstractSet[State]) -> State:
+def _create_new_dead_state(fsa_states: Set[State]) -> State:
     """Create a new dead state not in the given set of FSA states."""
     counter: int = 0
     dead_state: State = State(f"state_{counter}")

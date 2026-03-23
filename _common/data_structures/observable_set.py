@@ -1,6 +1,6 @@
 from __future__ import annotations
-from collections.abc import MutableSet
-from typing import override, Iterable, Iterator, Callable
+from collections.abc import MutableSet, Iterable, Iterator, Callable
+from typing import override
 
 
 class ObservableSet[T](MutableSet[T]):

@@ -1,6 +1,7 @@
 from graphviz import Digraph
 from collections import defaultdict
-from typing import TYPE_CHECKING, AbstractSet
+from typing import TYPE_CHECKING
+from collections.abc import Set
 from os import PathLike
 from .constants import _DEFAULT_RENDER_DIR, _GREEK_SMALL_LETTER_EPSILON
 from language.models.word import Word
@@ -73,8 +74,8 @@ class FSARenderer:
     @staticmethod
     def _insert_nodes(
         graph: Digraph,
-        states: AbstractSet[State],
-        final_states: AbstractSet[State],
+        states: Set[State],
+        final_states: Set[State],
     ) -> None:
         """Insert nodes into the graph based on the given states and final states of an FSA."""
         for state in states:

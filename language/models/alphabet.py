@@ -1,6 +1,6 @@
 from _common.data_structures import ObservableSet
 from .symbol import Symbol
-from typing import Iterable
+from collections.abc import Iterable
 
 
 class Alphabet(ObservableSet[Symbol]):

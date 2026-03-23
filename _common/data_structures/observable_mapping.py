@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import override, Callable, Mapping
-from collections.abc import MutableMapping
+from typing import override
+from collections.abc import MutableMapping, Callable, Mapping
 
 
 class ObservableMapping[K, V](MutableMapping[K, V]):

@@ -1,6 +1,6 @@
-from typing import AbstractSet, Iterable
 from _common.data_structures import SetDict
 from .state import State
+from collections.abc import Set, Collection
 
 
 class MarkingTable(SetDict[State, bool]):
@@ -17,19 +17,19 @@ class MarkingTable(SetDict[State, bool]):
     """
 
     _states: frozenset[State]
-    _row_states: tuple[State]
-    _col_states: tuple[State]
+    _row_states: tuple[State, ...]
+    _col_states: tuple[State, ...]
     _row_states_set: set[State]
     _col_states_set: set[State]
 
-    # ideal type for keys used for access with the marking table
-    type Key = tuple[State, State]
+    # type for keys used for access with the marking table
+    type Key = Collection[State]
     # type for values in the marking table, True = marked, False = unmarked
     type Value = bool
 
-    def __init__(self, states: AbstractSet[State]):
+    def __init__(self, states: Set[State]):
         """Initialise all items in the marking table to False (unmarked)."""
-        states_list: tuple[State] = tuple(states)
+        states_list: tuple[State, ...] = tuple(states)
         self._row_states = states_list[1:]
         self._col_states = states_list[:-1]
         self._row_states_set = set(self._row_states)
@@ -43,7 +43,7 @@ class MarkingTable(SetDict[State, bool]):
             }
         )
 
-    def __setitem__(self, key: Iterable[State], value: bool):
+    def __setitem__(self, key: Key, value: bool):
         if len(key) != 2:
             raise ValueError(f"Expected a key of length 2. Got {key!r}.")
 
@@ -68,11 +68,11 @@ class MarkingTable(SetDict[State, bool]):
         return len(self._row_states)  # or self._col_states
 
     @property
-    def COL_STATES(self) -> tuple[State]:
+    def COL_STATES(self) -> tuple[State, ...]:
         return self._col_states
 
     @property
-    def ROW_STATES(self) -> tuple[State]:
+    def ROW_STATES(self) -> tuple[State, ...]:
         return self._row_states
 
     @property

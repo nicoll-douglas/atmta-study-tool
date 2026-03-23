@@ -108,7 +108,7 @@ def product(
     product_fsa: FSA = FSA(
         initial_state=product_initial_state.STATE_OBJ,
         states=_ProductFSAState.get_product_fsa_states(a, b),
-        alphabet=a.alphabet | b.alphabet,
+        alphabet=Alphabet(a.alphabet | b.alphabet),
         final_states=(
             {product_initial_state.STATE_OBJ}
             if product_initial_state.is_final(a, b, acceptance_strategy)
@@ -118,7 +118,7 @@ def product(
 
     seen_states: set[State] = {product_initial_state.STATE_OBJ}
     states_unprocessed: deque[_ProductFSAState] = deque([product_initial_state])
-    common_alphabet: Alphabet = a.alphabet & b.alphabet
+    common_alphabet: Alphabet = Alphabet(a.alphabet & b.alphabet)
 
     while states_unprocessed:
         current_state: _ProductFSAState = states_unprocessed.popleft()

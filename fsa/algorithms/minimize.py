@@ -3,7 +3,8 @@ from ..models.marking_table import MarkingTable
 from ..models.state import State
 from .subset_construction import subset_construction
 from _common.data_structures import DisjointSetUnion
-from typing import AbstractSet, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from collections.abc import Set
 from copy import deepcopy
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ class _MinFSAState:
     # the actual state object that will be given to the new FSA
     _state_obj: State
 
-    def __init__(self, states: AbstractSet[State]):
+    def __init__(self, states: Set[State]):
         self._states = frozenset(states)
         # sorting here means each state object produced from the same set of states will be equivalent as they will have the same UID
         state_obj_uid: str = "{" + ", ".join(sorted(str(s) for s in states)) + "}"
@@ -61,8 +62,11 @@ def _should_mark(
         fsa: The FSA.
         marking_table: The marking table.
     """
-    next_row_state: State = fsa.delta(state_pair[0], transition_symbol).pop()
-    next_col_state: State = fsa.delta(state_pair[1], transition_symbol).pop()
+    row_state: State
+    col_state: State
+    row_state, col_state = state_pair
+    next_row_state: State = fsa.delta(row_state, transition_symbol).pop()
+    next_col_state: State = fsa.delta(col_state, transition_symbol).pop()
 
     if next_row_state == next_col_state:
         return False
@@ -72,10 +76,10 @@ def _should_mark(
 
 def _mark_initial(marking_table: MarkingTable, fsa: FSA) -> None:
     """Mark all state pairs consisting of a non-final and a final state in the given marking table for the given FSA."""
-    for key in marking_table.keys():
+    for row_state, col_state in marking_table.keys():
         # mark if one state is final and the other non-final
-        if (key[0] in fsa.final_states) ^ (key[1] in fsa.final_states):
-            marking_table.mark(key)
+        if (row_state in fsa.final_states) ^ (col_state in fsa.final_states):
+            marking_table.mark((row_state, col_state))
 
 
 def _perform_mark_passes(marking_table: MarkingTable, fsa: FSA) -> None:
@@ -117,12 +121,12 @@ def minimize(fsa: FSA) -> FSA:
 
     marking_table: MarkingTable = MarkingTable(dfa.states)
 
-    _mark_initial(marking_table, dfa.final_states)
+    _mark_initial(marking_table, dfa)
     _perform_mark_passes(marking_table, dfa)
 
     marking_table_dsu: DisjointSetUnion[State] = _get_marking_table_dsu(marking_table)
     min_fsa_states: dict[State, _MinFSAState] = _MinFSAState.get_min_fsa_states(
-        marking_table
+        marking_table_dsu
     )
     min_fsa_initial_state: _MinFSAState = min_fsa_states[
         marking_table_dsu.find(fsa.initial_state)

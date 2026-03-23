@@ -5,9 +5,10 @@ from .subset_construction import subset_construction
 if TYPE_CHECKING:
     from ..models.fsa import FSA
     from ..models.state import State
+    from language.models import Word
 
 
-def _dfa_accepts(dfa: FSA, word: str) -> bool:
+def _dfa_accepts(dfa: FSA, word: Word) -> bool:
     """Return True if the given DFA accepts the given word, otherwise False.
 
     Raises:
@@ -37,6 +38,6 @@ def _dfa_accepts(dfa: FSA, word: str) -> bool:
     return current_state in dfa.final_states
 
 
-def accepts(fsa: FSA, word: str) -> bool:
+def accepts(fsa: FSA, word: Word) -> bool:
     """Return True if the FSA accepts the given word otherwise False."""
     return _dfa_accepts(subset_construction(fsa), word)
