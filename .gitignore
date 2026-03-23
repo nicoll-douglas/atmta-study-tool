@@ -4,4 +4,4 @@ venv
 __pycache__
 diagrams
 notes.pdf
-cfg
+*.egg-info
