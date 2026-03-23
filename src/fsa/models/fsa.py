@@ -181,6 +181,7 @@ class FSA:
         return type
 
     def unreachable_states(self) -> set[State]:
+        """Return the set of unreachable states in the FSA i.e states that cannot be reached from the initial state."""
         visited: set[State] = {self.initial_state}
         queue: deque[State] = deque([self.initial_state])
 
@@ -196,6 +197,7 @@ class FSA:
         return set(self.states - visited)
 
     def remove_unreachable_states(self) -> set[State]:
+        """Remove all unreachable states from the FSA."""
         unreachable_states: set[State] = self.unreachable_states()
 
         self.states -= unreachable_states
@@ -203,6 +205,7 @@ class FSA:
         return unreachable_states
 
     def unproductive_states(self) -> set[State]:
+        """Return the set of unproductive states in the FSA i.e non-initial states that cannot reach a final state."""
         productive_states: set[State] = set(self.final_states)
         state_added: bool = True
 
@@ -215,9 +218,10 @@ class FSA:
                         productive_states.add(start_state)
                         state_added = True
 
-        return set(self.states - productive_states)
+        return set(self.states - productive_states - {self.initial_state})
 
     def remove_unproductive_states(self) -> set[State]:
+        """Remove all unproductive states from the FSA."""
         unproductive_states: set[State] = self.unproductive_states()
 
         self.states -= unproductive_states
