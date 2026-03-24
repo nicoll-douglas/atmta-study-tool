@@ -7,6 +7,7 @@ from collections.abc import Set
 from language import Symbol
 from .state import State
 
+
 class FSA:
     """Represents a Finite State Automaton (FSA)."""
 
@@ -48,13 +49,13 @@ class FSA:
                 f"Expected a set of states containing the initial state {self.initial_state!r}. Got {new_value}."
             )
 
-        def pre_discard(state: State) -> None:
+        def _pre_discard(state: State) -> None:
             if state == self.initial_state:
                 raise ValueError(
                     f"Expected a non-initial state. Got initial state {state!r}."
                 )
 
-        def post_discard(state: State) -> None:
+        def _post_discard(state: State) -> None:
             self.final_states.discard(state)
 
             self.transition_table.remove_such_that(lambda key, _: key[0] == state)
@@ -62,7 +63,9 @@ class FSA:
             for next_states in self.transition_table.values():
                 next_states.discard(state)
 
-        self._states = ObservableSet[State](new_value, post_discard=post_discard, pre_discard=pre_discard)
+        self._states = ObservableSet[State](
+            new_value, post_discard=_post_discard, pre_discard=_pre_discard
+        )
 
         if hasattr(self, "_final_states"):
             self.final_states -= self.final_states - new_value
@@ -102,10 +105,10 @@ class FSA:
 
     @alphabet.setter
     def alphabet(self, new_value: Alphabet) -> None:
-        def post_discard(symbol: Symbol) -> None:
+        def _post_discard(symbol: Symbol) -> None:
             self.transition_table.remove_such_that(lambda key, _: symbol == key[1])
 
-        ObservableSetController.set__post_discard(new_value, post_discard)
+        ObservableSetController.set__post_discard(new_value, _post_discard)
 
         self._alphabet = new_value
 
@@ -120,7 +123,9 @@ class FSA:
 
     @transition_table.setter
     def transition_table(self, new_value: TransitionTable) -> None:
-        def pre_setitem(key: TransitionTable.Key, value: TransitionTable.Value) -> None:
+        def _pre_setitem(
+            key: TransitionTable.Key, value: TransitionTable.Value
+        ) -> None:
             start_state: State
             symbol: Symbol | Word
             start_state, symbol = key
@@ -137,7 +142,7 @@ class FSA:
                     f"Expected the set of next states to be a subset of the set of states {self.states}. Got {value}."
                 )
 
-        new_value._pre_setitem = pre_setitem
+        new_value._pre_setitem = _pre_setitem
 
         # set all key-value pairs again to run our pre-setitem validation
         for key, value in new_value.items():
