@@ -58,6 +58,9 @@ class TransitionTable(
 
     @override
     def __setitem__(self, key: Key, value: Set[State]) -> None:
+        if isinstance(key[1], Word) and key[1] != Word.EPSILON:
+            raise ValueError(f"Expected a symbol or word equal to epsilon. Got {key[1]!r}.")
+        
         super().__setitem__(
             key,
             (

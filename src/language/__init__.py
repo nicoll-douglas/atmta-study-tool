@@ -1,3 +1,3 @@
-from . import models
+from .models import *
 
-__all__ = ["models"]
+__all__ = ["Word", "Symbol", "Alphabet"]

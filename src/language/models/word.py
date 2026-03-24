@@ -28,6 +28,19 @@ class Word(tuple[Symbol]):
             return Word(item)
 
         return item
+    
+    def __eq__(self, value):
+        return isinstance(value, Word) and super().__eq__(value)
+
+    def __hash__(self):
+        return hash((self.__class__, tuple(self)))
+    
+    @override
+    def __contains__(self, item: object):
+        if not isinstance(item, Symbol):
+            return False
+
+        return super().__contains__(item)
 
 
 Word.EPSILON = Word()
