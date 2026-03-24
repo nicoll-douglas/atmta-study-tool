@@ -5,3 +5,4 @@ __pycache__
 renders
 notes.pdf
 *.egg-info
+.vscode
