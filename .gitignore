@@ -6,3 +6,4 @@ renders
 notes.pdf
 *.egg-info
 .vscode
+.pytest_cache
