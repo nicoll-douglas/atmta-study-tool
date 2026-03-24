@@ -1,12 +1,10 @@
 from __future__ import annotations
-from ..models.fsa import FSA
-from ..models.state import State
-from typing import Literal, TYPE_CHECKING
+from ..models import FSA, State
+from typing import Literal
 from collections import deque
 from .epsilon_remove import epsilon_remove
+from language import Alphabet
 
-if TYPE_CHECKING:
-    from language.models import Alphabet
 
 # represents an acceptance strategy for whether a product FSA state should be a final state
 type _FinalStateAcceptanceStrategy = Literal[

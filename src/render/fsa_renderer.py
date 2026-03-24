@@ -1,16 +1,10 @@
 from graphviz import Digraph
 from collections import defaultdict
-from typing import TYPE_CHECKING
 from collections.abc import Set
 from os import PathLike
 from .constants import _DEFAULT_RENDER_DIR, _GREEK_SMALL_LETTER_EPSILON
-from language.models.word import Word
-from language.models.symbol import Symbol
-
-if TYPE_CHECKING:
-    from fsa.models.fsa import FSA
-    from fsa.models.state import State
-    from fsa.models.transition_table import TransitionTable
+from language import Word, Symbol
+from fsa import FSA, State, TransitionTable
 
 
 class FSARenderer:

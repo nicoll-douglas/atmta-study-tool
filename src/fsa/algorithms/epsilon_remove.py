@@ -1,11 +1,7 @@
-from ..models.fsa import FSA
-from typing import TYPE_CHECKING
+from ..models import FSA, State
 from copy import deepcopy
 from collections.abc import Set
-
-if TYPE_CHECKING:
-    from ..models.state import State
-    from language.models import Symbol
+from language import Symbol
 
 # a memo object that maps states in an FSA to its epsilon-closure
 type _EpsilonClosureMap = dict[State, set[State]]

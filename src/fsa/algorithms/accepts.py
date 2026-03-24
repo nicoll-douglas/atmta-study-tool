@@ -1,11 +1,6 @@
-from typing import TYPE_CHECKING
-from ..models.fsa_type import FSAType
+from ..models import FSAType, State, FSA
 from .subset_construction import subset_construction
-
-if TYPE_CHECKING:
-    from ..models.fsa import FSA
-    from ..models.state import State
-    from language.models import Word
+from language import Word
 
 
 def _dfa_accepts(dfa: FSA, word: Word) -> bool:

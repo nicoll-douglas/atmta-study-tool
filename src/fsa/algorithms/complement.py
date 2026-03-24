@@ -1,10 +1,6 @@
-from typing import TYPE_CHECKING
 from .subset_construction import subset_construction
 from collections.abc import Set
-
-if TYPE_CHECKING:
-    from ..models.fsa import FSA
-    from ..models.state import State
+from ..models import FSA, State
 
 
 def complement(fsa: FSA) -> FSA:

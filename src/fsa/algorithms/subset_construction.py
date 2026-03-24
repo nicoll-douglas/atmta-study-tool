@@ -1,13 +1,9 @@
 from __future__ import annotations
-from ..models.fsa import FSA
-from ..models.state import State
+from ..models import FSA, State
 from collections import deque
 from copy import deepcopy
-from typing import TYPE_CHECKING
 from collections.abc import Set
-
-if TYPE_CHECKING:
-    from language.models import Symbol
+from language import Symbol
 
 
 class _NewDFAState:

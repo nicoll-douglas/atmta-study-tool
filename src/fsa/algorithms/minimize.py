@@ -1,14 +1,9 @@
-from ..models.fsa import FSA
-from ..models.marking_table import MarkingTable
-from ..models.state import State
+from ..models import MarkingTable, FSA, State
 from .subset_construction import subset_construction
 from _common.data_structures import DisjointSetUnion
-from typing import TYPE_CHECKING
 from collections.abc import Set
 from copy import deepcopy
-
-if TYPE_CHECKING:
-    from language.models import Symbol
+from language import Symbol
 
 
 class _MinFSAState:

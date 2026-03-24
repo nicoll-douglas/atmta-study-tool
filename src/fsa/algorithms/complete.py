@@ -1,10 +1,6 @@
-from ..models.state import State
-from typing import TYPE_CHECKING
+from ..models import State, FSA
 from copy import deepcopy
 from collections.abc import Set
-
-if TYPE_CHECKING:
-    from ..models.fsa import FSA
 
 
 def _create_new_dead_state(fsa_states: Set[State]) -> State:

@@ -2,9 +2,9 @@ from .fsa_type import FSAType
 from .transition_table import TransitionTable
 from collections import deque
 from _common.data_structures import ObservableSet, ObservableSetController
-from language.models import Alphabet, Word
+from language import Alphabet, Word
 from collections.abc import Set
-from language.models import Symbol
+from language import Symbol
 from .state import State
 
 class FSA:
