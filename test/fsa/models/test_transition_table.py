@@ -1,5 +1,6 @@
 from fsa.models.transition_table import TransitionTable
 from test.types import TransitionCountData
+from functools import reduce
 
 
 class TestTransitionTable:
@@ -48,3 +49,12 @@ class TestTransitionTable:
     ):
         for symbol, count in transition_table_counts[1].items():
             assert transition_table.transition_count(symbol) == count
+
+    def test_transition_count(
+        self,
+        transition_table: TransitionTable,
+        transition_table_counts: TransitionCountData,
+    ):
+        assert transition_table.transition_count() == sum(
+            transition_table_counts[1].values()
+        )

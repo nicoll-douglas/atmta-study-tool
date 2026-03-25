@@ -68,6 +68,7 @@ def transition_table_counts(
     q: tuple[State, ...] = transition_table_states
     s, epsilon = transition_table_symbols
 
+    # correct to the best of my observation
     return (
         {
             q[0]: {
