@@ -3,9 +3,10 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "my_package"
+name = "atmta-study-tool"
 version = "0.1.0"
 requires-python = ">=3.14"
+description = "A programmatic study tool for studying state machines"
 dependencies = [
     "graphviz",
 ]
