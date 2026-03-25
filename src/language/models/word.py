@@ -1,6 +1,7 @@
 from __future__ import annotations
 from .symbol import Symbol
-from typing import override, SupportsIndex, overload
+from typing import override, SupportsIndex, overload, cast
+from collections.abc import Sequence
 
 
 class Word(tuple[Symbol]):
@@ -9,11 +10,29 @@ class Word(tuple[Symbol]):
     # the empty word
     EPSILON: Word
 
+    def __new__(cls, iterable: Sequence[Symbol] | Sequence[str] | None = None) -> Word:
+        match iterable:
+            case [Symbol(), *_]:
+                return super().__new__(cls, iterable)
+            case [str(_), *_]:
+                return super().__new__(cls, (Symbol(s) for s in iterable))
+            case _:
+                return super().__new__(cls)
+
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
 
+    @classmethod
+    def _validate_word(cls, obj: object):
+        """Validate that the given object is an instance of the class or raise a ValueError otherwise."""
+        if not isinstance(obj, Word):
+            raise ValueError(f"Expected an instance of {cls.__name__}. Got {obj!r}.")
+
     @override
-    def __add__(self, other):
+    def __add__(self, other: object) -> Word:
+        self._validate_word(other)
+        other = cast(Word, other)
+
         return Word(super().__add__(other))
 
     @override
