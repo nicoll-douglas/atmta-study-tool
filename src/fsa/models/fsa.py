@@ -134,7 +134,7 @@ class FSA:
 
             if symbol not in self.alphabet and symbol != Word.EPSILON:
                 raise ValueError(
-                    f"Expected a symbol in the alphabet {self.alphabet} or {Word.EPSILON}. Got {symbol!r}."
+                    f"Expected a symbol in the alphabet {self.alphabet} or {Word.EPSILON!r}. Got {symbol!r}."
                 )
 
             if not value <= self.states:
