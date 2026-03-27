@@ -121,10 +121,6 @@ class CFG:
                 ):
                     self.rules.discard(rule)
 
-    # TODO: remove str method
-    def __str__(self) -> str:
-        return "\n".join(str(rule) for rule in self.rules)
-
     def _discard_rules_that_contain(self, symbol: Symbol) -> None:
         """Discard rules from the CFG ruleset that the given symbol."""
         for rule in list(filter(lambda rule: symbol in rule, self.rules)):

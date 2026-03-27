@@ -1,6 +1,7 @@
 from __future__ import annotations
 from .variable import Variable
 from atmta_study_tool.language import Word
+from atmta_study_tool._common.constants import EPSILON_UID
 
 
 class Rule:
@@ -23,9 +24,8 @@ class Rule:
     def RHS(self) -> Word:
         return self._rhs
 
-    # TODO: check if RHS is epsilon and substitute epsilon UID
     def __str__(self):
-        return str(self.LHS) + " \u2192 " + "".join(str(s) for s in self.RHS)
+        return str(self.LHS) + " \u2192 " + str(self.RHS)
 
     def __repr__(self):
         return f"{self.__class__.__name__}(LHS={self.LHS!r}, RHS={self.RHS!r})"
