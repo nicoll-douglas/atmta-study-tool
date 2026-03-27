@@ -25,10 +25,10 @@ package "_common.data_structures" {
 
     class ObservableSet<T> {
         # data
-        # pre_add
-        # post_add
-        # pre_discard
-        # post_discard
+        ~ pre_add
+        ~ post_add
+        ~ pre_discard
+        ~ post_discard
         + add()
         + discard()
         + __init__()
@@ -74,6 +74,7 @@ package "_common.data_structures" {
 
 package "language" {
     class Symbol {
+        # validate_uid()
     }
 
     class Alphabet {
@@ -85,6 +86,7 @@ package "language" {
         # validate_word()
         + __new__()
         + __repr__()
+        + __str__()
         + __add__()
         + __getitem__()
         + __eq__()
@@ -174,6 +176,35 @@ package "cfg" {
     }
 }
 
+package "render" {
+    class TextRenderer {
+        # get_set_str()
+        # get_tuple_str()
+    }
+
+    class ImageRenderer {
+        - {static} BASE_RENDER_DIR
+        # render_dir
+        # __init__()
+    }
+
+    class FSARenderer {
+        + combine_edges
+        + __init__()
+        + print_formal()
+        + render_image()
+        # insert_initial_state_arrow()
+        # insert_nodes()
+        # insert_edges()
+        # insert_combined_edges()
+    }
+
+    class CFGRenderer {
+        + print_rules()
+        + print_formal()
+    }
+}
+
 class UserDict<T, U>
 class MutableSet<T>
 class tuple<T, ...>
@@ -197,6 +228,10 @@ ObservableMapping <|-- TransitionTable : <tuple<State, Symbol | Word>, Observabl
 SetDict <|-- MarkingTable : <State, bool>
 
 Symbol <|-- Variable
+
+TextRenderer <|-- CFGRenderer
+ImageRenderer <|-- FSARenderer
+TextRenderer <|-- FSARenderer
 
 FSA "many" o-- "1" TransitionTable : uses a >
 FSA "many" o-- "many" State : uses >
