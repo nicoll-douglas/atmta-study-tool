@@ -23,6 +23,7 @@ class Rule:
     def RHS(self) -> Word:
         return self._rhs
 
+    # TODO: check if RHS is epsilon and substitute epsilon UID
     def __str__(self):
         return str(self.LHS) + " \u2192 " + "".join(str(s) for s in self.RHS)
 
