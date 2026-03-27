@@ -171,7 +171,6 @@ package "cfg" {
         + alphabet
         + rules
         # discard_rules_that_contain()
-        # validate_variables_contain()
     }
 }
 
