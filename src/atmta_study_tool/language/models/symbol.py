@@ -1,6 +1,6 @@
 from __future__ import annotations
 from atmta_study_tool._common.data_structures import UID
-from ..constants import _EPSILON_UID
+from ..constants import _EPSILON_UID  # TODO: change import to _common.constants
 import unicodedata
 
 

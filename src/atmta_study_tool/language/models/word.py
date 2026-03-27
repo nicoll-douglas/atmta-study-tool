@@ -54,6 +54,8 @@ class Word(tuple[Symbol, ...]):
 
         return item
 
+    # TODO: add __str__ method that returns word as string, Word.EPSILON -> epsilon character
+
     def __eq__(self, value):
         return isinstance(value, Word) and super().__eq__(value)
 
