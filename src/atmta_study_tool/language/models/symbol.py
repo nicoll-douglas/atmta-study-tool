@@ -16,5 +16,7 @@ class Symbol(UID[str]):
                 f"Expected a string not equal to {EPSILON_UID!r}. Got {uid!r}."
             )
 
+        # TODO: validate that the uid is not empty
+
 
 Symbol.__doc__ = f"Implements a symbol as a string-based UID object.\n\nThe UID cannot be '{EPSILON_UID}' ({unicodedata.name(EPSILON_UID)})."

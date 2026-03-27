@@ -2,6 +2,8 @@ from pathlib import Path
 
 
 class ImageRenderer:
+    """Represents an image renderer that outputs images to disk."""
+
     # the default directory where renders should go relative to the cwd of the program
     _BASE_RENDER_DIR: Path = Path("renders")
     # the output directory where rendered images should go
