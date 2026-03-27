@@ -1,8 +1,20 @@
 from __future__ import annotations
 from atmta_study_tool._common.data_structures import UID
+from ..constants import _EPSILON_UID
+import unicodedata
 
 
 class Symbol(UID[str]):
-    """Implements a symbol as a string-based UID object."""
+    def __init__(self, uid: str):
+        Symbol._validate_uid(uid)
+        super().__init__(uid)
 
-    pass
+    @staticmethod
+    def _validate_uid(uid: str):
+        if uid == _EPSILON_UID:
+            raise ValueError(
+                f"Expected a string not equal to {_EPSILON_UID!r}. Got {uid!r}."
+            )
+
+
+Symbol.__doc__ = f"Implements a symbol as a string-based UID object.\n\nThe UID cannot be {_EPSILON_UID} ({unicodedata.name(_EPSILON_UID)})."
