@@ -1,0 +1,215 @@
+@startuml test
+
+hide empty members
+
+package "_common.data_structures" {
+    class UID<T> {
+        - uid
+        + UID
+        - {static} WeakValueDictionary REGISTRY
+        + __new__()
+        + __eq__()
+        + __hash__()
+        + __str__()
+        + __repr__()
+    }
+
+    class SetDict<T, U> {
+        # key()
+        + __init__()
+        + __setitem__()
+        + __getitem__()
+        + __delitem__()
+        + __contains__()
+    }
+
+    class ObservableSet<T> {
+        # data
+        # pre_add
+        # post_add
+        # pre_discard
+        # post_discard
+        + add()
+        + discard()
+        + __init__()
+        + __contains__()
+        + __len__()
+        + __iter__()
+        + __repr__()
+    }
+
+    class ObservableSetController {
+        + {static} set__pre_add()
+        + {static} set__post_add()
+        + {static} set__pre_discard()
+        + {static} set__post_discard()
+    }
+
+    class ObservableMapping<T, U> {
+        # data
+        # pre_setitem
+        # post_setitem
+        # pre_delitem
+        # post_delitem
+        + __init__()
+        + __getitem__()
+        + __setitem__()
+        + __delitem__()
+        + __iter__()
+        + __len__()
+        + __repr__()
+        + __contains__()
+    }
+
+    class DisjointSetUnion<T> {
+        # parents
+        # items
+        + __init__()
+        + __iter__()
+        + find()
+        + union()
+        + sets()
+    }
+}
+
+package "language" {
+    class Symbol {
+    }
+
+    class Alphabet {
+        + __init__()
+    }
+
+    class Word {
+        + {static} EPSILON
+        # validate_word()
+        + __new__()
+        + __repr__()
+        + __add__()
+        + __getitem__()
+        + __eq__()
+        + __hash__()
+        + __contains__()
+    }
+}
+
+package "fsa" {
+    class State {
+    }
+
+    class TransitionTable {
+        # pre_value_add
+        # post_value_add
+        # pre_value_discard
+        # post_value_discard
+        # create_observable_value()
+        # validate_transition_symbol()
+        + __init__()
+        + __setitem__()
+        + __missing__()
+        + remove_such_that()
+        + transition_count()
+        + incoming_transition_count()
+        + outgoing_transition_count()
+        + loop_transition_count()
+    }
+
+    class FSA {
+        + initial_state
+        + states
+        + final_states
+        + alphabet
+        + transition_table
+        + type()
+        + unreachable_states()
+        + remove_unreachable_states()
+        + unproductive_states()
+        + remove_unproductive_states()
+        + delta()
+        + epsilon_closure()
+        # validate_states_contain()
+    }
+
+    class MarkingTable {
+        # states
+        # row_states
+        # col_states
+        # row_states_set
+        # col_states_set
+        + SIZE
+        + STATES
+        + COL_STATES
+        + ROW_STATES
+        + __init__()
+        + __setitem__()
+        + __delitem__()
+        + mark()
+        + unmark()
+        + marked()
+    }
+}
+
+package "cfg" {
+    class Variable {}
+
+    class Rule {
+        # _lhs
+        # _rhs
+        + LHS
+        + RHS
+        + __init__()
+        + __str__()
+        + __repr__()
+        + __eq__()
+        + __hash__()
+        + __contains__()
+    }
+
+    class CFG {
+        + starting_variable
+        + variables
+        + alphabet
+        + rules
+        # discard_rules_that_contain()
+        # validate_variables_contain()
+    }
+}
+
+class UserDict<T, U>
+class MutableSet<T>
+class tuple<T, ...>
+class MutableMapping<T, U>
+
+UID <|-- Symbol : <str>
+UID <|-- State : <str>
+
+UserDict <|-- SetDict: <frozenset<T>, U>
+
+MutableSet <|-- ObservableSet : <T>
+
+MutableMapping <|-- ObservableMapping : <T, U>
+
+tuple <|-- Word: <Symbol>
+
+ObservableSet <|-- Alphabet : <Symbol>
+
+ObservableMapping <|-- TransitionTable : <tuple<State, Symbol | Word>, ObservableSet<State>>
+
+SetDict <|-- MarkingTable : <State, bool>
+
+Symbol <|-- Variable
+
+FSA "many" o-- "1" TransitionTable : uses a >
+FSA "many" o-- "many" State : uses >
+FSA "many" o-- "1" Alphabet : uses an >
+
+Word "many" o-- "many" Symbol : is a concatenation of >
+
+Rule "many" o-- "1" Variable : has a left-hand side >
+Rule "many" o-- "1" Word : has a right-hand side >
+
+CFG "many" o-- "many" Rule : uses >
+CFG "many" o-- "many" Variable : uses >
+CFG "many" o-- "1" Alphabet : uses an >
+
+@enduml

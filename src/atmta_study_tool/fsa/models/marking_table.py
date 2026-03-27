@@ -63,6 +63,12 @@ class MarkingTable(SetDict[State, bool]):
 
         return super().__setitem__(key, value)
 
+    # prevent removal of squares in the marking table
+    def __delitem__(self, key: Key) -> None:
+        raise TypeError(
+            f"'{self.__class__.__name__}' object does not support item deletion."
+        )
+
     @property
     def SIZE(self) -> int:
         """Get the size of the marking table."""
