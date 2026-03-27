@@ -2,10 +2,11 @@ from __future__ import annotations
 from .symbol import Symbol
 from typing import override, SupportsIndex, overload, cast
 from collections.abc import Sequence
+from atmta_study_tool._common.constants import EPSILON_UID
 
 
 class Word(tuple[Symbol, ...]):
-    """Implements a word as a list of symbols."""
+    """Implements a word as a tuple of symbols."""
 
     # the empty word
     EPSILON: Word
@@ -54,7 +55,8 @@ class Word(tuple[Symbol, ...]):
 
         return item
 
-    # TODO: add __str__ method that returns word as string, Word.EPSILON -> epsilon character
+    def __str__(self) -> str:
+        return EPSILON_UID if self == Word.EPSILON else "".join(str(s) for s in self)
 
     def __eq__(self, value):
         return isinstance(value, Word) and super().__eq__(value)
