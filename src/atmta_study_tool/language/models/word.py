@@ -4,7 +4,7 @@ from typing import override, SupportsIndex, overload, cast
 from collections.abc import Sequence
 
 
-class Word(tuple[Symbol]):
+class Word(tuple[Symbol, ...]):
     """Implements a word as a list of symbols."""
 
     # the empty word
