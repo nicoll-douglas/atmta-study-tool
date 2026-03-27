@@ -121,6 +121,7 @@ class CFG:
                 ):
                     self.rules.discard(rule)
 
+    # TODO: remove str method
     def __str__(self) -> str:
         return "\n".join(str(rule) for rule in self.rules)
 

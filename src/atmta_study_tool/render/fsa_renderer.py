@@ -20,7 +20,7 @@ class FSARenderer(ImageRenderer):
 
         super().__init__("fsa")
 
-    def render(
+    def render_image(
         self, fsa: FSA, filename: PathLike | str, open_file: bool = False
     ) -> None:
         """Create an image representation (.png) of the given FSA and optionally
