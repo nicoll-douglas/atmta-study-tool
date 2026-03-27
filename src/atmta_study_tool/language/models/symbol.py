@@ -3,6 +3,8 @@ from atmta_study_tool._common.data_structures import UID
 from atmta_study_tool._common.constants import EPSILON_UID
 import unicodedata
 
+# TODO: add tests for the validate_uid method
+
 
 class Symbol(UID[str]):
     def __init__(self, uid: str):
