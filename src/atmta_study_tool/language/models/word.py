@@ -1,8 +1,9 @@
 from __future__ import annotations
 from .symbol import Symbol
 from typing import override, SupportsIndex, overload, cast
-from collections.abc import Sequence
+from collections.abc import Iterable
 from atmta_study_tool._common.constants import EPSILON_UID
+from ..types import SymbolLike
 
 
 class Word(tuple[Symbol, ...]):
@@ -11,14 +12,13 @@ class Word(tuple[Symbol, ...]):
     # the empty word
     EPSILON: Word
 
-    def __new__(cls, iterable: Sequence[Symbol] | Sequence[str] | None = None) -> Word:
-        match iterable:
-            case [Symbol(), *_]:
-                return super().__new__(cls, iterable)
-            case [str(_), *_]:
-                return super().__new__(cls, (Symbol(s) for s in iterable))
-            case _:
-                return super().__new__(cls)
+    def __new__(cls, iterable: Iterable[SymbolLike] | None = None) -> Word:
+        if iterable is None:
+            return super().__new__(cls)
+
+        return super().__new__(
+            cls, ((Symbol(s) if isinstance(s, str) else s) for s in iterable)
+        )
 
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
