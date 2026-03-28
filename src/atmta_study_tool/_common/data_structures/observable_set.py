@@ -69,33 +69,34 @@ class ObservableSet[T](MutableSet[T]):
         return f"{self.__class__.__name__}({self._data!r})"
 
 
-class ObservableSetController:
+class ObservableSetController[T]:
     """Controller class for modifying ObservableSet internals."""
 
-    @staticmethod
-    def set__pre_add[T](
-        observable_set: ObservableSet[T],
-        value: Callable[[T], None] | None = None,
-    ) -> None:
-        observable_set._pre_add = value
+    obs_set: ObservableSet[T]
 
-    @staticmethod
-    def set__post_add[T](
-        observable_set: ObservableSet[T],
-        value: Callable[[T], None] | None = None,
-    ) -> None:
-        observable_set._post_add = value
+    def __init__(self, obs_set: ObservableSet[T]) -> None:
+        self.obs_set = obs_set
 
-    @staticmethod
-    def set__pre_discard[T](
-        observable_set: ObservableSet[T],
+    def set_pre_add(
+        self,
         value: Callable[[T], None] | None = None,
     ) -> None:
-        observable_set._pre_discard = value
+        self.obs_set._pre_add = value
 
-    @staticmethod
-    def set__post_discard[T](
-        observable_set: ObservableSet[T],
+    def set_post_add(
+        self,
         value: Callable[[T], None] | None = None,
     ) -> None:
-        observable_set._post_discard = value
+        self.obs_set._post_add = value
+
+    def set_pre_discard(
+        self,
+        value: Callable[[T], None] | None = None,
+    ) -> None:
+        self.obs_set._pre_discard = value
+
+    def set_post_discard(
+        self,
+        value: Callable[[T], None] | None = None,
+    ) -> None:
+        self.obs_set._post_discard = value

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ..models import FSA, State
+from ..models import FSA, State, FSAType
 from typing import Literal
 from collections import deque
 from .epsilon_remove import epsilon_remove
@@ -98,6 +98,9 @@ def product(
     # remove epsilon transitions to make life easier
     a = epsilon_remove(a)
     b = epsilon_remove(b)
+
+    assert FSAType.EPSILON_NFA not in a.type()
+    assert FSAType.EPSILON_NFA not in b.type()
 
     product_initial_state: _ProductFSAState = (
         _ProductFSAState.get_product_fsa_initial_state(a, b)

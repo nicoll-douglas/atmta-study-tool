@@ -5,6 +5,7 @@ from os import PathLike
 from atmta_study_tool.fsa import FSA, State, TransitionTable
 from ._image_renderer import ImageRenderer
 from ._text_renderer import TextRenderer
+from pathlib import Path
 
 
 class FSARenderer(TextRenderer, ImageRenderer):
@@ -13,13 +14,10 @@ class FSARenderer(TextRenderer, ImageRenderer):
     # whether to combine multiple transitions between two states into one edge
     combine_edges: bool
 
-    def __init__(
-        self,
-        combine_edges: bool = True,
-    ):
+    def __init__(self, combine_edges: bool = True, directory: Path | str = "fsa"):
         self.combine_edges = combine_edges
 
-        super().__init__("fsa")
+        super().__init__(directory)
 
     def print_formal(self, fsa: FSA) -> None:
         """Print the given FSA as its formal 5-tuple definition."""

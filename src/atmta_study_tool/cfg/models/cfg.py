@@ -102,8 +102,8 @@ class CFG:
 
     @alphabet.setter
     def alphabet(self, new_value: Alphabet) -> None:
-        ObservableSetController.set__post_discard(
-            new_value, lambda s: self._discard_rules_that_contain(s)
+        ObservableSetController(new_value).set_post_discard(
+            lambda s: self._discard_rules_that_contain(s)
         )
 
         self._alphabet = new_value

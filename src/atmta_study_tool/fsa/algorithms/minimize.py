@@ -1,4 +1,4 @@
-from ..models import MarkingTable, FSA, State
+from ..models import MarkingTable, FSA, State, FSAType
 from .subset_construction import subset_construction
 from atmta_study_tool._common.data_structures import DisjointSetUnion
 from collections.abc import Set
@@ -46,7 +46,7 @@ class _MinFSAState:
 def _should_mark(
     state_pair: MarkingTable.Key,
     transition_symbol: Symbol,
-    fsa: FSA,
+    dfa: FSA,
     marking_table: MarkingTable,
 ) -> bool:
     """Return True if the given state pair should be marked in the given marking table, otherwise False.
@@ -54,14 +54,16 @@ def _should_mark(
     Args:
         state_pair: The state pair.
         transition_symbol: A transition symbol in the given FSA's alphabet.
-        fsa: The FSA.
+        dfa: The FSA.
         marking_table: The marking table.
     """
+    assert (FSAType.DFA | FSAType.COMPLETE) in dfa.type()
+
     row_state: State
     col_state: State
     row_state, col_state = state_pair
-    next_row_state: State = fsa.delta(row_state, transition_symbol).pop()
-    next_col_state: State = fsa.delta(col_state, transition_symbol).pop()
+    next_row_state: State = dfa.delta(row_state, transition_symbol).pop()
+    next_col_state: State = dfa.delta(col_state, transition_symbol).pop()
 
     if next_row_state == next_col_state:
         return False

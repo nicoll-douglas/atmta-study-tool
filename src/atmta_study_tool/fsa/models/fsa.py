@@ -110,7 +110,7 @@ class FSA:
         def _post_discard(symbol: Symbol) -> None:
             self.transition_table.remove_such_that(lambda key, _: symbol == key[1])
 
-        ObservableSetController.set__post_discard(new_value, _post_discard)
+        ObservableSetController(new_value).set_post_discard(_post_discard)
 
         self._alphabet = new_value
 
@@ -134,10 +134,7 @@ class FSA:
 
             self._validate_states_contain(start_state)
 
-            if symbol not in self.alphabet and symbol != Word.EPSILON:
-                raise ValueError(
-                    f"Expected a symbol in the alphabet {self.alphabet} or {Word.EPSILON!r}. Got {symbol!r}."
-                )
+            self._validate_transition_symbol(symbol)
 
             if not value <= self.states:
                 raise ValueError(
@@ -271,4 +268,11 @@ class FSA:
         if state not in self.states:
             raise ValueError(
                 f"Expected a state in the set of states {self.states}. Got {state!r}."
+            )
+
+    def _validate_transition_symbol(self, symbol: Symbol | Word) -> None:
+        """Validate that the given symbol or word is a valid symbol for a transition in the FSA."""
+        if symbol not in self.alphabet and symbol != Word.EPSILON:
+            raise ValueError(
+                f"Expected a symbol in the alphabet {self.alphabet} or {Word.EPSILON!r}. Got {symbol!r}."
             )
