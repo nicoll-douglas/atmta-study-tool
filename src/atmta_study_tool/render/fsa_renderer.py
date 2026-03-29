@@ -26,7 +26,9 @@ class FSARenderer(TextRenderer, ImageRenderer):
             [
                 self._get_set_str(fsa.alphabet),
                 self._get_set_str(fsa.states),
-                # TODO: add easy way to get string representation of transitions
+                self._get_set_str(
+                    {self._get_tuple_str(t) for t in fsa.transition_table.flatten()}
+                ),
                 self._get_set_str(fsa.final_states),
                 str(fsa.initial_state),
                 self._get_set_str(fsa.final_states),

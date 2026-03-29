@@ -176,3 +176,11 @@ class TransitionTable(
             return sum
 
         return reduce(_reducer, self.items(), 0)
+
+    def flatten(self) -> set[tuple[State, Transition, State]]:
+        """Return a list of transitions in the transition table as a set of 3-tuples."""
+        return {
+            (start_state, transition, next_state)
+            for (start_state, transition), next_states in self.items()
+            for next_state in next_states
+        }
