@@ -7,49 +7,51 @@ from collections.abc import Callable, Set, Iterable, Mapping, MutableMapping
 from functools import reduce
 
 
-class TransitionTable[S](
-    MutableMapping[tuple[State, S | Symbol], ObservableSet[State]]
+class TransitionTable[U: (str, frozenset[State]) = str](
+    MutableMapping[tuple[State, Symbol], ObservableSet[State]]
 ):
     """Represents the transition table for an automaton."""
 
-    _data: dict[tuple[State, S | Symbol], ObservableSet[State]]
+    _data: dict[tuple[State[U], Symbol], ObservableSet[State[U]]]
     # hook function to run before a state is set in the transition table either in a key or value
-    _validate_state: Callable[[State], None] | None = None
+    _validate_state: Callable[[State[U]], None] | None = None
     # hook function to run before a symbol is set in the transition table
-    _validate_symbol: Callable[[S | Symbol], None] | None = None
+    _validate_symbol: Callable[[Symbol], None] | None = None
 
     def __init__(
         self,
-        mapping: Mapping[tuple[State, S], Set[State]] | None = None,
+        mapping: Mapping[tuple[State[U], Symbol], Set[State[U]]] | None = None,
     ):
         if mapping is not None:
             for key, value in mapping.items():
                 self[key] = value
 
-    def _value(self, value: Iterable[State] | None = None) -> ObservableSet[State]:
+    def _value(
+        self, value: Iterable[State[U]] | None = None
+    ) -> ObservableSet[State[U]]:
         """Create an observable set with value-add and value-discard hooks for the given set of states."""
         # here we use lambdas to create closures and take advantage of late binding instead of passing direct attributes
-        return ObservableSet[State](
+        return ObservableSet[State[U]](
             value,
             pre_add=lambda state: (
                 None if self._validate_state is None else self._validate_state(state)
             ),
         )
 
-    def _validate_key(self, key: tuple[State, S | Symbol]) -> None:
+    def _validate_key(self, key: tuple[State[U], Symbol]) -> None:
         if self._validate_state is not None:
             self._validate_state(key[0])
 
         if self._validate_symbol is not None:
             self._validate_symbol(key[1])
 
-    def _validate_value(self, value: Set[State]) -> None:
+    def _validate_value(self, value: Set[State[U]]) -> None:
         if self._validate_state is not None:
             for state in value:
                 self._validate_state(state)
 
     @override
-    def __getitem__(self, key: tuple[State, S | Symbol]) -> ObservableSet[State]:
+    def __getitem__(self, key: tuple[State[U], Symbol]) -> ObservableSet[State[U]]:
         self._validate_key(key)
 
         if key in self._data:
@@ -58,20 +60,20 @@ class TransitionTable[S](
         return self.__missing__(key)
 
     @override
-    def __setitem__(self, key: tuple[State, S | Symbol], value: Set[State]) -> None:
+    def __setitem__(self, key: tuple[State[U], Symbol], value: Set[State[U]]) -> None:
         self._validate_key(key)
         self._validate_value(value)
 
         self._data[key] = self._value(value)
 
     @override
-    def __delitem__(self, key: tuple[State, S | Symbol]) -> None:
+    def __delitem__(self, key: tuple[State[U], Symbol]) -> None:
         self._validate_key(key)
 
         del self._data[key]
 
-    def __missing__(self, key: tuple[State, S | Symbol]) -> ObservableSet[State]:
-        value: ObservableSet[State] = self._value()
+    def __missing__(self, key: tuple[State[U], Symbol]) -> ObservableSet[State[U]]:
+        value: ObservableSet[State[U]] = self._value()
         self._data[key] = value
 
         return value
@@ -91,7 +93,8 @@ class TransitionTable[S](
         return key in self._data
 
     def remove_such_that(
-        self, match: Callable[[tuple[State, S | Symbol], ObservableSet[State]], bool]
+        self,
+        match: Callable[[tuple[State[U], Symbol], ObservableSet[State[U]]], bool],
     ) -> None:
         """Remove items from the transition table based on the given matching function.
 
@@ -102,7 +105,7 @@ class TransitionTable[S](
             if match(key, value):
                 del self[key]
 
-    def transition_count(self, entity: S | Symbol | State | None = None) -> int:
+    def transition_count(self, entity: Symbol | State[U] | None = None) -> int:
         """Return the number of transitions in the transition table involving the given symbol, the given state, or in total if none given."""
         if entity is None:
             return reduce(lambda sum, v: len(v) + sum, self.values(), 0)
@@ -119,7 +122,7 @@ class TransitionTable[S](
 
         def _reducer(
             sum: int,
-            table_item: tuple[tuple[State, S | Symbol], ObservableSet[State]],
+            table_item: tuple[tuple[State[U], Symbol], ObservableSet[State[U]]],
         ) -> int:
             (_, transition_symbol), value = table_item
 
@@ -134,13 +137,13 @@ class TransitionTable[S](
             0,
         )
 
-    def incoming_transition_count(self, state: State) -> int:
+    def incoming_transition_count(self, state: State[U]) -> int:
         """Return the number of incoming transitions to the given state."""
         if self._validate_state is not None:
             self._validate_state(state)
 
         def _reducer(
-            sum: int, item: tuple[tuple[State, S | Symbol], ObservableSet[State]]
+            sum: int, item: tuple[tuple[State[U], Symbol], ObservableSet[State[U]]]
         ) -> int:
             (start_state, _), next_states = item
 
@@ -151,13 +154,13 @@ class TransitionTable[S](
 
         return reduce(_reducer, self.items(), 0)
 
-    def outgoing_transition_count(self, state: State) -> int:
+    def outgoing_transition_count(self, state: State[U]) -> int:
         """Return the number of outgoing transitions from the given state."""
         if self._validate_state is not None:
             self._validate_state(state)
 
         def _reducer(
-            sum: int, item: tuple[tuple[State, S | Symbol], ObservableSet[State]]
+            sum: int, item: tuple[tuple[State[U], Symbol], ObservableSet[State[U]]]
         ) -> int:
             (start_state, _), next_states = item
 
@@ -172,13 +175,13 @@ class TransitionTable[S](
 
         return reduce(_reducer, self.items(), 0)
 
-    def loop_transition_count(self, state: State) -> int:
+    def loop_transition_count(self, state: State[U]) -> int:
         """Return the number of loop transitions at the given state."""
         if self._validate_state is not None:
             self._validate_state(state)
 
         def _reducer(
-            sum: int, item: tuple[tuple[State, S | Symbol], ObservableSet[State]]
+            sum: int, item: tuple[tuple[State[U], Symbol], ObservableSet[State[U]]]
         ) -> int:
             (start_state, _), next_states = item
 
@@ -189,7 +192,7 @@ class TransitionTable[S](
 
         return reduce(_reducer, self.items(), 0)
 
-    def flatten(self) -> set[tuple[State, S | Symbol, State]]:
+    def flatten(self) -> set[tuple[State[U], Symbol, State[U]]]:
         """Return a list of transitions in the transition table as a set of 3-tuples."""
         return {
             (start_state, transition, next_state)
