@@ -1,4 +1,4 @@
-from atmta_study_tool.language import Symbol, Word
+from atmta_study_tool.language import Symbol, Word, Alphabet
 from .abstract_fsa import AbstractFSA
 from .state import State
 from collections import deque
@@ -6,9 +6,11 @@ from collections.abc import Set
 from .transition_table import TransitionTable
 from .marking_table import MarkingTable
 from atmta_study_tool._common.data_structures import DisjointSetUnion
+from atmta_study_tool._common.utils import str_set, str_tuple
+from typing import overload, Literal
 
 
-class FSA[U: (str, frozenset[State]) = str](AbstractFSA[U]):
+class FSA[U = str](AbstractFSA[U]):
     """Represents a concrete Finite-State Automaton (FSA)."""
 
     def _validate_symbol(self, symbol: Symbol) -> None:
@@ -111,30 +113,46 @@ class FSA[U: (str, frozenset[State]) = str](AbstractFSA[U]):
 
         return found_missing
 
-    def subset_construction(self, complete: bool = False) -> FSA[frozenset[State]]:
-        initial_state: State[frozenset[State]] = State(
-            frozenset(self.epsilon_closure({self.initial_state}))
+    @overload
+    def subset_construction(self, *, normalize: Literal[True]) -> FSA[str]: ...
+
+    @overload
+    def subset_construction(
+        self, *, normalize: Literal[False]
+    ) -> FSA[frozenset[State[U]]]: ...
+
+    @overload
+    def subset_construction(
+        self, *, complete: bool = ...
+    ) -> FSA[frozenset[State[U]]]: ...
+
+    def subset_construction(
+        self, *, complete: bool = False, normalize: bool = False
+    ) -> FSA[frozenset[State[U]]] | FSA[str]:
+        initial_state: State[frozenset[State[U]]] = State(
+            frozenset(self.epsilon_closure({self.initial_state})), label=str_set
         )
-        dfa: FSA[frozenset[State]] = FSA(
+        dfa: FSA[frozenset[State[U]]] = FSA(
             initial_state=initial_state,
             states={initial_state},
             alphabet=self.alphabet.copy(),
         )
-        states_unprocessed: deque[State[frozenset[State]]] = deque([initial_state])
+        states_unprocessed: deque[State[frozenset[State[U]]]] = deque([initial_state])
 
         while states_unprocessed:
-            current_dfa_state: State[frozenset[State]] = states_unprocessed.popleft()
+            current_dfa_state: State[frozenset[State[U]]] = states_unprocessed.popleft()
 
             if current_dfa_state.UID & self.final_states:
                 dfa.final_states.add(current_dfa_state)
 
             for symbol in dfa.alphabet:
-                discovered_state: State[frozenset[State]] = State(
+                discovered_state: State[frozenset[State[U]]] = State(
                     frozenset(
                         state
                         for nfa_state in current_dfa_state.UID
                         for state in self.epsilon_closure(self.delta(nfa_state, symbol))
-                    )
+                    ),
+                    label=str_set,
                 )
 
                 if not discovered_state.UID and not complete:
@@ -146,12 +164,12 @@ class FSA[U: (str, frozenset[State]) = str](AbstractFSA[U]):
 
                 dfa.transition_table[(current_dfa_state, symbol)] = {discovered_state}
 
-        return dfa
+        return dfa.normalize_states() if normalize else dfa
 
-    def complement(self) -> FSA[frozenset[State]]:
+    def complement(self) -> FSA:
         """Create and return the complement automaton of the FSA."""
-        dfa: FSA[frozenset[State]] = self.subset_construction(complete=True)
-        non_final_states: Set[State[frozenset[State]]] = dfa.states - dfa.final_states
+        dfa: FSA = self.subset_construction(normalize=True)
+        non_final_states: Set[State] = dfa.states - dfa.final_states
 
         dfa.final_states = non_final_states
 
@@ -176,11 +194,20 @@ class FSA[U: (str, frozenset[State]) = str](AbstractFSA[U]):
         # the word is accepted if after finishing traversal, the current state is a final state
         return current_state in dfa.final_states
 
-    def minimized(self) -> FSA:
+    @overload
+    def minimized(self, *, normalize: Literal[True]) -> FSA[str]: ...
+
+    @overload
+    def minimized(
+        self, *, normalize: Literal[False]
+    ) -> FSA[frozenset[State[frozenset[State[U]]]]]: ...
+
+    def minimized(
+        self, *, normalize: bool = False
+    ) -> FSA[frozenset[State[frozenset[State[U]]]]] | FSA[str]:
         """Perform the FSA minimization algorithm on the given FSA to create and return a new, minimized FSA."""
 
-        dfa: FSA[frozenset[State]] = self.subset_construction(complete=True)
-
+        dfa: FSA[frozenset[State[U]]] = self.subset_construction(complete=True)
         marking_table: MarkingTable = MarkingTable(dfa.states)
 
         for row_state, col_state in marking_table.keys():
@@ -197,11 +224,11 @@ class FSA[U: (str, frozenset[State]) = str](AbstractFSA[U]):
                     for symbol in dfa.alphabet:
                         row_state, col_state = key
 
-                        next_row_state: State[frozenset[State]] = dfa.delta(
+                        next_row_state: State[frozenset[State[U]]] = dfa.delta(
                             row_state, symbol
                         ).pop()
 
-                        next_col_state: State[frozenset[State]] = dfa.delta(
+                        next_col_state: State[frozenset[State[U]]] = dfa.delta(
                             col_state, symbol
                         ).pop()
 
@@ -220,37 +247,161 @@ class FSA[U: (str, frozenset[State]) = str](AbstractFSA[U]):
             if not mark:
                 table_unions.union(state_a, state_b)
 
-        min_dfa_states: dict[State[frozenset[State]], tuple[set[State], State[str]]] = {
-            representative: (states, State(f"q{index}"))
-            for index, (representative, states) in enumerate(
-                table_unions.sets().items()
-            )
+        # TODO: type annotations got ugly here
+        min_dfa_states: dict[
+            State[frozenset[State[U]]], State[frozenset[State[frozenset[State[U]]]]]
+        ] = {
+            representative: State(frozenset(state), label=str_set)
+            for representative, state in table_unions.sets().items()
         }
 
-        min_dfa: FSA = FSA(
-            initial_state=min_dfa_states[table_unions.find(dfa.initial_state)][1],
-            states=set(value[1] for value in min_dfa_states.values()),
+        min_dfa: FSA[frozenset[State[frozenset[State[U]]]]] = FSA(
+            initial_state=min_dfa_states[table_unions.find(dfa.initial_state)],
+            states=min_dfa_states.values(),
             alphabet=dfa.alphabet.copy(),
         )
 
-        for representative, (states, state) in min_dfa_states.items():
+        for representative, state in min_dfa_states.items():
             for symbol in dfa.alphabet:
-                next_dfa_state: State[frozenset[State]] = dfa.delta(
+                next_dfa_state: State[frozenset[State[U]]] = dfa.delta(
                     representative, symbol
                 ).pop()
 
-                next_dfa_state_repr: State[frozenset[State]] = table_unions.find(
+                next_dfa_state_repr: State[frozenset[State[U]]] = table_unions.find(
                     next_dfa_state
                 )
 
                 min_dfa.transition_table[(state, symbol)] = {
-                    min_dfa_states[next_dfa_state_repr][1]
+                    min_dfa_states[next_dfa_state_repr]
                 }
 
-            if states & dfa.final_states:
+            if state.UID & dfa.final_states:
                 min_dfa.final_states.add(state)
 
         min_dfa.remove_unreachable_states()
         min_dfa.remove_unproductive_states()
 
-        return min_dfa
+        return min_dfa.normalize_states() if normalize else min_dfa
+
+    def normalize_states(self) -> FSA:
+        final_states: set[State[str]] = set()
+
+        state_map: dict[State[U], State[str]] = {}
+
+        for i, old_state in enumerate(self.states):
+            new_state: State[str] = State(f"q{i}")
+
+            state_map[old_state] = new_state
+
+            if old_state in self.final_states:
+                final_states.add(new_state)
+
+        transition_table: TransitionTable = TransitionTable(
+            {
+                (state_map[start_state], symbol): {
+                    state_map[next_state] for next_state in next_states
+                }
+                for (start_state, symbol), next_states in self.transition_table.items()
+            }
+        )
+
+        return FSA(
+            initial_state=state_map[self.initial_state],
+            final_states=final_states,
+            states=state_map.values(),
+            alphabet=self.alphabet.copy(),
+            transition_table=transition_table,
+        )
+
+    def product(
+        self,
+        other: FSA[U],
+        acceptance: Literal[
+            "intersection", "union", "difference", "xor"
+        ] = "intersection",
+        no_unreachable: bool = True,
+    ) -> FSA[tuple[State[U], State[U]]]:
+        """Create and return the product FSA of two FSAs.
+
+        Args:
+            other: The other FSA from which to create a product FSA.
+            acceptance: The strategy for computing final states.
+        """
+        self.epsilon_remove()
+        other.epsilon_remove()
+
+        initial_state: State[tuple[State[U], State[U]]] = State(
+            (self.initial_state, other.initial_state), label=str_tuple
+        )
+
+        product_fsa: FSA[tuple[State[U], State[U]]] = FSA(
+            initial_state=initial_state,
+            states=(
+                {initial_state}
+                if no_unreachable
+                else (
+                    State((state_self, state_other))
+                    for state_self in self.states
+                    for state_other in other.states
+                )
+            ),
+            alphabet=Alphabet(self.alphabet | other.alphabet),
+        )
+
+        seen_states: set[State[tuple[State[U], State[U]]]] = {initial_state}
+        states_unprocessed: deque[State[tuple[State[U], State[U]]]] = deque(
+            [initial_state]
+        )
+        common_alphabet: Alphabet = Alphabet(self.alphabet & other.alphabet)
+
+        while states_unprocessed:
+            current_state: State[tuple[State[U], State[U]]] = (
+                states_unprocessed.popleft()
+            )
+
+            if self._is_product_final_state(
+                current_state, acceptance, other.final_states
+            ):
+                product_fsa.final_states.add(current_state)
+
+            for symbol in common_alphabet:
+                for self_delta in self.delta(current_state.UID[0], symbol):
+                    for other_delta in other.delta(current_state.UID[1], symbol):
+                        discovered_state: State[tuple[State[U], State[U]]] = State(
+                            (self_delta, other_delta)
+                        )
+
+                        if no_unreachable:
+                            product_fsa.states.add(discovered_state)
+
+                        if discovered_state not in seen_states:
+                            seen_states.add(discovered_state)
+                            states_unprocessed.append(discovered_state)
+
+                        product_fsa.transition_table[(current_state, symbol)].add(
+                            discovered_state
+                        )
+
+        return product_fsa
+
+    def _is_product_final_state(
+        self,
+        state: State[tuple[State[U], State[U]]],
+        acceptance: Literal["union", "difference", "xor", "intersection"],
+        other_final_states: Set[State[U]],
+    ) -> bool:
+        state_self, state_other = state.UID
+
+        if acceptance == "union":
+            return state_self in self.final_states or state_other in other_final_states
+        elif acceptance == "difference":
+            return (
+                state_self in self.final_states
+                and state_other not in other_final_states
+            )
+        elif acceptance == "xor":
+            return (state_self in self.final_states) ^ (
+                state_other in other_final_states
+            )
+        else:
+            return state_self in self.final_states and state_other in other_final_states

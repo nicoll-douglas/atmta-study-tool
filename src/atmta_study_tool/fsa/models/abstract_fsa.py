@@ -5,12 +5,14 @@ from atmta_study_tool._common.data_structures import (
 from .state import State
 from .transition_table import TransitionTable
 from atmta_study_tool.language import Alphabet, Symbol
-from collections.abc import Set
+from collections.abc import Set, Iterable
 from abc import ABC, abstractmethod
 from collections import deque
+from copy import deepcopy
+from typing import Self
 
 
-class AbstractFSA[U: (str, frozenset[State]) = str](ABC):
+class AbstractFSA[U = str](ABC):
     """Represents an abstract Finite-State Automaton (FSA).
 
     Args:
@@ -31,15 +33,15 @@ class AbstractFSA[U: (str, frozenset[State]) = str](ABC):
     def __init__(
         self,
         initial_state: State[U],
-        states: Set[State[U]],
+        states: Iterable[State[U]],
         alphabet: Alphabet | None = None,
         transition_table: TransitionTable[U] | None = None,
-        final_states: Set[State[U]] | None = None,
+        final_states: Iterable[State[U]] | None = None,
     ):
         self.initial_state = initial_state
         self.states = states
         self.alphabet = alphabet if alphabet is not None else Alphabet()
-        self.final_states = final_states if final_states is not None else set()
+        self.final_states = final_states
         self.transition_table = (
             transition_table if transition_table is not None else TransitionTable()
         )
@@ -49,7 +51,7 @@ class AbstractFSA[U: (str, frozenset[State]) = str](ABC):
         return self._states
 
     @states.setter
-    def states(self, new_value: Set[State[U]]) -> None:
+    def states(self, new_value: Iterable[State[U]]) -> None:
         if self.initial_state not in new_value:
             raise ValueError(
                 f"Expected a set of states containing the initial state {self.initial_state!r}. Got {new_value!r}."
@@ -74,7 +76,7 @@ class AbstractFSA[U: (str, frozenset[State]) = str](ABC):
         )
 
         if hasattr(self, "_final_states"):
-            self.final_states -= self.final_states - new_value
+            self.final_states -= self.final_states - self.states
 
         if hasattr(self, "_transition_table"):
             self.transition_table.remove_such_that(
@@ -100,7 +102,7 @@ class AbstractFSA[U: (str, frozenset[State]) = str](ABC):
         return self._final_states
 
     @final_states.setter
-    def final_states(self, new_value: Set[State[U]]) -> None:
+    def final_states(self, new_value: Iterable[State[U]] | None = None) -> None:
         self._final_states = ObservableSet[State[U]](
             new_value, pre_add=self._validate_states_contain
         )
@@ -201,6 +203,10 @@ class AbstractFSA[U: (str, frozenset[State]) = str](ABC):
             delta_states |= self.transition_table[(state, symbol)]
 
         return delta_states
+
+    def copy(self) -> Self:
+        """Create a deep copy of the FSA."""
+        return deepcopy(self)
 
     def _validate_states_contain(self, state: State) -> None:
         """Validate that the given state is in the set of states of the FSA."""

@@ -1,14 +1,22 @@
 from __future__ import annotations
-from typing import override
+from typing import Self
 from atmta_study_tool._common.data_structures import UID
+from collections.abc import Callable
 
 
-class State[T: (str, frozenset["State"])](UID[T]):
-    """Implements a state in an automaton as a string-based state-set-based UID."""
+class State[U](UID[U]):
+    """Implements a state in an automaton as a string-based UID."""
 
-    @override
+    _label: Callable[[U], str] | None
+
+    def __new__(cls, uid: U, label: Callable[[U], str] | None = None) -> Self:
+        instance: Self = super().__new__(cls, uid)
+        instance._label = label
+
+        return instance
+
+    def __getnewargs__(self) -> tuple:
+        return (self.UID, self._label)
+
     def __str__(self) -> str:
-        if isinstance(self.UID, str):
-            return super().__str__()
-
-        return "{" + ", ".join(str(s) for s in self.UID) + "}"
+        return super().__str__() if self._label is None else self._label(self.UID)

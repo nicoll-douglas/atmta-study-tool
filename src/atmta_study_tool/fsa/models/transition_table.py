@@ -7,8 +7,8 @@ from collections.abc import Callable, Set, Iterable, Mapping, MutableMapping
 from functools import reduce
 
 
-class TransitionTable[U: (str, frozenset[State]) = str](
-    MutableMapping[tuple[State, Symbol], ObservableSet[State]]
+class TransitionTable[U = str](
+    MutableMapping[tuple[State[U], Symbol], ObservableSet[State[U]]]
 ):
     """Represents the transition table for an automaton."""
 
