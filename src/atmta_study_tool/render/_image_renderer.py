@@ -11,7 +11,7 @@ class ImageRenderer(Renderer):
     # the output directory where rendered images should go
     _IMAGE_RENDER_DIR: Path = Renderer._RENDER_DIR / "img"
 
-    type ImageFormat = Literal["png", "jpg", "jpeg", "svg", "webp", "ascii"]
+    type ImageFormat = Literal["png", "jpg", "jpeg", "svg", "webp"]
 
     @abstractmethod
     def image(self, filename: PathLike | str, format: ImageFormat) -> None:
