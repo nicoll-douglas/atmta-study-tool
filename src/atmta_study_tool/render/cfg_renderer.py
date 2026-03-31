@@ -1,26 +1,26 @@
 from atmta_study_tool.cfg import CFG
-from ._text_renderer import TextRenderer
+from atmta_study_tool._common.utils import strings_from, str_set, str_tuple
+from .printer import Printer
 
 
-class CFGRenderer(TextRenderer):
+class CFGRenderer(Printer):
     """Represents a renderer object that can render CFGs as text."""
 
-    def print_rules(self, cfg: CFG) -> None:
+    def rules(self, cfg: CFG) -> str:
         """Print the given CFG as a list of its rules."""
-        print("Starting variable:", cfg.starting_variable)
-
-        for rule in cfg.rules:
-            print(rule)
-
-    def print_formal(self, cfg: CFG) -> None:
-        """Print the given CFG as its formal 4-tuple definition."""
-        four_tuple: str = self._get_tuple_str(
-            [
-                self._get_set_str(cfg.alphabet),
-                self._get_set_str(cfg.variables),
-                self._get_set_str(cfg.rules),
-                cfg.starting_variable,
-            ]
+        return f"Starting variable: {cfg.starting_variable}\n" + "\n".join(
+            strings_from(cfg.rules)
         )
 
-        print(four_tuple)
+    def formal(self, cfg: CFG) -> str:
+        """Print the given CFG as its formal 4-tuple definition."""
+        four_tuple: str = str_tuple(
+            (
+                str_set(cfg.alphabet),
+                str_set(cfg.variables),
+                str_set(cfg.rules),
+                str(cfg.starting_variable),
+            )
+        )
+
+        return four_tuple
